@@ -1,0 +1,197 @@
+<view class="page mine-page">
+  <view wx:if="{{!loggedIn}}" class="login-card card">
+    <view class="login-mark">未</view><text>未登录</text><text>登录后查看订单、积分、余额和个人资料</text>
+    <button bindtap="loginAgain">授权微信登录</button>
+    <view><text data-type="user" bindtap="openAgreement">用户服务协议</text><text>与</text><text data-type="privacy" bindtap="openAgreement">隐私保护政策</text></view>
+  </view>
+  <block wx:else>
+  <view class="profile-hero card">
+    <view class="profile-glow profile-glow-one"></view><view class="profile-glow profile-glow-two"></view>
+    <view class="profile-row" bindtap="openProfile" hover-class="touch-card">
+      <view class="profile-avatar">
+        <image wx:if="{{member.avatarUrl}}" src="{{member.avatarUrl}}" mode="aspectFill"/>
+        <text wx:else>{{member.avatarText}}</text>
+        <view class="avatar-edit">✎</view>
+      </view>
+      <view class="profile-copy">
+        <view><text>{{member.nickname}}</text><text class="level-chip">{{member.level}}</text></view>
+        <text>会员号 {{member.memberNo}}</text>
+      </view>
+      <text class="profile-arrow">›</text>
+    </view>
+    <view class="member-data-row">
+      <view bindtap="showMemberRules"><text>{{member.points}}</text><text>会员积分</text></view>
+    </view>
+  </view>
+
+  <view class="member-card">
+    <view class="member-card-head"><view><text>{{member.level}}</text><text>{{member.discountLabel}} · {{member.validityLabel}}</text></view><text>{{member.levelBadge}}</text></view>
+    <view class="member-progress"><view style="width:{{member.progress}}%"></view></view>
+    <view class="member-card-foot"><text>{{member.levelHint}}</text><view><button bindtap="checkMemberUpgrade">检测升级</button><button bindtap="showMemberRules">等级说明 ›</button></view></view>
+  </view>
+
+  <view class="order-overview card">
+    <view class="section-head"><view><text class="section-title">我的订单</text><text>统一查看住宿、门票、出行、餐饮与商城订单</text></view><button bindtap="showAllOrders">全部订单 <text>›</text></button></view>
+    <view class="order-tabs">
+      <button wx:for="{{orderCategories}}" wx:key="status" class="order-tab {{activeStatus===item.status?'order-tab-active':''}}" bindtap="switchOrderStatus" data-status="{{item.status}}" hover-class="tab-pressed">
+        <view><text>{{item.icon}}</text><text wx:if="{{item.count}}" class="order-count">{{item.count}}</text></view><text>{{item.name}}</text>
+      </button>
+    </view>
+  </view>
+
+  <view class="purchased-section">
+    <view class="purchased-head"><view><text class="section-title">{{activeStatusLabel}}</text><text>订单状态支持下拉刷新后同步</text></view><text>{{visibleOrders.length}} 笔</text></view>
+    <view wx:if="{{!visibleOrders.length}}" class="order-empty card"><view>订</view><text>暂无{{activeStatusLabel}}订单</text><text>完成住宿、车辆、门票、餐饮或商城购买后会显示在这里</text></view>
+    <view wx:for="{{visibleOrders}}" wx:key="id" class="purchased-order card" data-id="{{item.id}}" bindtap="openOrderDetail" hover-class="order-card-pressed">
+      <view class="purchased-order-head"><view><text class="order-type">{{item.typeLabel}}</text><text class="order-number">{{item.orderNo || item.id}}</text></view><text class="order-status">{{item.displayStatusLabel}}</text></view>
+      <view class="purchased-order-body">
+        <view class="order-symbol order-symbol-{{item.type}}">{{item.typeSymbol}}</view>
+        <view class="order-copy"><text>{{item.title}}</text><text>{{item.subtitle}}</text><text>使用时间：{{item.displayUseDate}}</text></view>
+        <view class="order-amount"><text>{{item.amountLabel}}</text><text>查看详情 ›</text></view>
+      </view>
+      <view wx:if="{{item.verificationCode && item.type!=='VEHICLE'}}" class="verification-row"><text>核销码</text><text>{{item.verificationCode}}</text></view>
+      <view wx:if="{{item.status==='REFUNDED'}}" class="refund-result"><text>退款单号 {{item.refundId}}</text><text>已按原支付路径退款</text></view>
+      <view wx:if="{{item.status==='CANCELLED'}}" class="refund-result cancelled-result"><text>取消单号 {{item.cancellationNo}}</text><text>预约已关闭</text></view>
+      <view class="order-actions" wx:if="{{item.status==='PENDING_PAYMENT'}}"><button class="review-button" loading="{{payingOrderId===item.id}}" disabled="{{payingOrderId!==''}}" catchtap="payOrder" data-id="{{item.id}}">微信支付</button></view>
+      <view class="order-actions" wx:if="{{item.type==='VEHICLE' && item.status!=='CANCELLED'}}"><button class="service-progress-button" catchtap="openVehicleProgress" data-id="{{item.id}}">查看服务进度</button></view>
+      <view class="order-actions" wx:if="{{item.type!=='VEHICLE' && item.status==='PENDING_USE'}}">
+        <button wx:if="{{item.verificationAvailable}}" catchtap="showVerificationCode" data-id="{{item.id}}">查看电子票</button>
+        <button wx:if="{{item.refundAvailable}}" class="refund-button" loading="{{refundingOrderId===item.id}}" disabled="{{refundingOrderId===item.id}}" catchtap="applyRefund" data-id="{{item.id}}">申请退款</button>
+        <text wx:if="{{!item.refundAvailable}}" class="refund-disabled">已超过可退款时间</text>
+      </view>
+      <view class="order-actions" wx:if="{{item.status==='PENDING_REVIEW' || item.status==='COMPLETED'}}"><button class="review-button" catchtap="evaluateOrder">评价</button></view>
+      <text wx:if="{{item.status==='PENDING_USE' && item.refundRule}}" class="refund-rule">{{item.refundRule}}</text>
+    </view>
+  </view>
+
+  <view wx:for="{{toolGroups}}" wx:key="title" class="tool-section">
+    <text class="tool-title">{{item.title}}</text>
+    <view class="tool-card card">
+      <block wx:for="{{item.items}}" wx:for-item="tool" wx:key="name">
+        <view wx:if="{{(tool.action!=='staffVerification'||staffVerificationEnabled)&&(tool.action!=='driverPortal'||driverPortalAvailable)}}" class="tool-row" bindtap="openTool" data-action="{{tool.action}}" hover-class="tool-pressed">
+          <text class="tool-icon">{{tool.icon}}</text><view><text>{{tool.name}}</text><text>{{tool.value}}</text></view><text class="tool-arrow">›</text>
+        </view>
+      </block>
+      <button wx:if="{{item.title==='帮助与设置'}}" class="tool-row feedback-row" open-type="feedback">
+        <text class="tool-icon">馈</text><view><text>意见反馈</text><text>提交建议与问题</text></view><text class="tool-arrow">›</text>
+      </button>
+    </view>
+  </view>
+
+  <view class="mine-footer"><text>i某小程序产业服务平台©版权所有</text><text>服务数据以订单提交与后台确认为准</text></view>
+
+  <view wx:if="{{activePanel}}" class="panel-mask" bindtap="closePanel" catchtouchmove="preventOverlayTap"></view>
+  <view wx:if="{{activePanel}}" class="mine-panel" catchtap="preventOverlayTap">
+    <view class="panel-handle"></view>
+    <view class="panel-head">
+      <view>
+        <text>{{activePanel==='profile'?'会员信息':activePanel==='memberRules'?'会员规则':activePanel==='address'?'地址管理':activePanel==='addressEdit'?'编辑地址':activePanel==='traveler'?'常用旅客':activePanel==='travelerEdit'?'编辑旅客':activePanel==='orderDetail'?'订单详情':activePanel==='verification'?'核销凭证':activePanel==='about'?'关于我们':'设置'}}</text>
+        <text>{{activePanel==='orderDetail'?'查看完整订单信息与服务状态':'i某小程序产业服务平台'}}</text>
+      </view>
+      <button bindtap="closePanel">×</button>
+    </view>
+
+    <scroll-view class="panel-body" scroll-y>
+      <view wx:if="{{activePanel==='profile'}}" class="profile-editor">
+        <button class="avatar-editor" bindtap="chooseAvatar"><image wx:if="{{member.avatarUrl}}" src="{{member.avatarUrl}}" mode="aspectFill"/><text wx:else>{{member.avatarText}}</text><view>更换头像</view></button>
+        <view class="form-field"><text>会员昵称</text><input value="{{editNickname}}" maxlength="12" bindinput="nicknameInput" placeholder="请输入昵称"/></view>
+        <view class="readonly-field"><text>会员等级</text><text>{{member.level}}</text></view>
+        <button class="panel-primary" bindtap="saveProfile">保存会员信息</button>
+      </view>
+
+      <view wx:if="{{activePanel==='memberRules'}}" class="rules-list">
+        <view class="member-rule-summary"><text>{{member.levelBadge}}</text><view><text>当前为{{member.level}}</text><text>{{member.discountLabel}} · {{member.validityLabel}}</text></view></view>
+        <view class="points-overview"><view><b>{{member.points}}</b><text>可用积分</text></view><view><b>{{member.growthPoints}}</b><text>成长积分</text></view><view><b>{{member.pendingPointOrders.length}}</b><text>待结算订单</text></view><view><b>{{member.pointsToNext}}</b><text>距下一级</text></view></view>
+        <view class="member-level-table">
+          <view class="member-level-head"><text>会员等级</text><text>成长积分</text><text>专享折扣</text></view>
+          <view wx:for="{{memberLevels}}" wx:key="code" class="member-level-row {{member.levelCode===item.code?'member-level-current':''}}"><text>{{item.name}}</text><text>{{item.minPoints}}+</text><text>{{item.discountLabel}}</text></view>
+        </view>
+        <view><text>01</text><view><text>积分获取</text><text>付款后积分先进入待结算；订单完成且无退款后，按实付每1元发放1积分并计入成长积分。</text></view></view>
+        <view><text>02</text><view><text>自动升级</text><text>成长积分达到等级门槛后自动升级，等级越高优惠越多，最高享7折。</text></view></view>
+        <view><text>03</text><view><text>会员有效期</text><text>白银及以上等级自升级之日起有效一年；到期恢复普通会员并重置成长积分，可用积分保留。</text></view></view>
+        <view><text>04</text><view><text>优惠范围</text><text>会员价在确认订单界面展示；未知价格项目将在后台价格确定后自动计算。</text></view></view>
+        <view class="points-record-card">
+          <view class="points-record-head"><text>最近积分记录</text><text>1元=1积分</text></view>
+          <text wx:if="{{!member.pointRecords.length}}" class="points-record-empty">首笔订单完成后，积分记录会显示在这里</text>
+          <view wx:for="{{member.pointRecords}}" wx:key="orderId" class="points-record-row"><view><text>{{item.description}}</text><text>{{item.createdAt}}</text></view><b>{{item.points>0?'+':''}}{{item.points}}</b></view>
+        </view>
+        <button class="panel-primary" bindtap="checkMemberUpgrade">立即检测会员升级</button>
+      </view>
+
+      <view wx:if="{{activePanel==='address'}}" class="address-panel">
+        <view wx:if="{{!addresses.length}}" class="address-empty"><text>址</text><text>还没有收货地址</text><text>商城配送与餐饮配送可直接使用已保存地址</text></view>
+        <view wx:for="{{addresses}}" wx:key="id" class="address-card">
+          <view><text>{{item.name}}</text><text>{{item.phone}}</text><text wx:if="{{item.isDefault}}">默认</text></view><text>{{item.detail}}</text>
+          <view><button wx:if="{{!item.isDefault}}" data-id="{{item.id}}" bindtap="setDefaultAddress">设为默认</button><button data-id="{{item.id}}" bindtap="editAddress">编辑</button><button data-id="{{item.id}}" bindtap="deleteAddress">删除</button></view>
+        </view>
+        <button class="panel-primary" bindtap="startAddAddress">＋ 新增收货地址</button>
+      </view>
+
+      <view wx:if="{{activePanel==='addressEdit'}}" class="address-editor">
+        <view class="form-field"><text>联系人</text><input value="{{addressForm.name}}" bindinput="addressNameInput" placeholder="请输入姓名"/></view>
+        <view class="form-field"><text>手机号</text><input type="number" maxlength="11" value="{{addressForm.phone}}" bindinput="addressPhoneInput" placeholder="请输入手机号"/></view>
+        <view class="form-field textarea-field"><text>详细地址</text><textarea value="{{addressForm.detail}}" bindinput="addressDetailInput" maxlength="80" placeholder="请输入省市区及详细地址"></textarea></view>
+        <view class="switch-row"><view><text>设为默认地址</text><text>配送时优先使用</text></view><switch checked="{{addressForm.isDefault}}" color="#aa4a32" bindchange="addressDefaultChange"/></view>
+        <button class="panel-primary" bindtap="saveAddress">保存地址</button>
+      </view>
+
+      <view wx:if="{{activePanel==='orderDetail' && selectedOrder}}" class="order-detail-panel">
+        <view class="order-detail-status"><view class="order-symbol order-symbol-{{selectedOrder.type}}">{{selectedOrder.typeSymbol}}</view><view><text>{{selectedOrder.displayStatusLabel}}</text><text>{{selectedOrder.typeLabel}}订单</text></view></view>
+        <view class="detail-card">
+          <view><text>订单编号</text><text>{{selectedOrder.orderNo || selectedOrder.id}}</text></view><view><text>订单内容</text><text>{{selectedOrder.title}}</text></view><view><text>规格信息</text><text>{{selectedOrder.subtitle}}</text></view><view><text>使用时间</text><text>{{selectedOrder.displayUseDate}}</text></view><view><text>订单金额</text><text class="detail-amount">{{selectedOrder.amountLabel}}</text></view>
+        </view>
+        <view wx:if="{{selectedOrder.refundId}}" class="refund-progress"><text>退款进度</text><view><text>✓</text><text>退款申请已完成</text></view><text>退款单号 {{selectedOrder.refundId}}</text></view>
+        <view class="panel-action-row" wx:if="{{selectedOrder.status==='PENDING_PAYMENT'}}"><button class="development-pay" loading="{{payingOrderId===selectedOrder.id}}" disabled="{{payingOrderId!==''}}" data-id="{{selectedOrder.id}}" bindtap="payOrder">微信支付</button></view>
+        <view class="panel-action-row" wx:if="{{selectedOrder.status==='PENDING_USE'}}"><button wx:if="{{selectedOrder.verificationAvailable}}" data-id="{{selectedOrder.id}}" bindtap="showVerificationCode">查看电子票</button><button wx:if="{{selectedOrder.refundAvailable}}" class="danger-outline" data-id="{{selectedOrder.id}}" bindtap="applyRefund">申请退款</button></view>
+      </view>
+
+      <view wx:if="{{activePanel==='verification' && selectedOrder}}" class="verification-panel">
+        <view wx:if="{{verificationLoading}}" class="verification-state"><text>正在读取后端电子票…</text></view>
+        <view wx:elif="{{verificationError}}" class="verification-state verification-error"><text>{{verificationError}}</text><button bindtap="retryVerification">重新读取</button></view>
+        <view wx:elif="{{!selectedOrder.verificationTickets.length}}" class="verification-state"><text>当前订单暂无可用电子票</text><text>请确认订单已支付，或稍后重新读取。</text><button bindtap="retryVerification">重新读取</button></view>
+        <view wx:else class="verification-ticket-list">
+          <view wx:for="{{selectedOrder.verificationTickets}}" wx:key="id" class="verification-ticket">
+            <view class="verification-code">
+              <image wx:if="{{item.status==='UNUSED' && item.qrCodeDataUrl}}" class="verification-qr" src="{{item.qrCodeDataUrl}}" mode="aspectFit" show-menu-by-longpress="{{false}}"/>
+              <text>{{item.status==='UNUSED'?item.displayCode:'— — —'}}</text>
+              <text>{{item.status==='UNUSED'?'请向工作人员出示二维码核销':item.statusLabel}}</text>
+            </view>
+            <view class="verification-ticket-meta"><view><text>{{item.ticketDisplayName || item.resourceName || selectedOrder.title}}</text><text>第{{item.ticketNo}}张 · {{item.serviceDate || selectedOrder.displayUseDate}}{{item.timeSlot?' · '+item.timeSlot:''}}</text></view><text class="ticket-status ticket-status-{{item.status}}">{{item.statusLabel}}</text></view>
+          </view>
+        </view>
+        <view class="detail-card"><view><text>订单</text><text>{{selectedOrder.title}}</text></view><view><text>使用时间</text><text>{{selectedOrder.displayUseDate}}</text></view><view><text>订单号</text><text>{{selectedOrder.orderNo || selectedOrder.id}}</text></view></view>
+      </view>
+
+      <view wx:if="{{activePanel==='traveler'}}" class="traveler-panel">
+        <view wx:if="{{!travelers.length}}" class="traveler-empty"><text>客</text><text>还没有常用旅客</text><text>保存后可在住宿、门票和车辆预约时快速填写</text></view>
+        <view wx:for="{{travelers}}" wx:key="id" class="traveler-card">
+          <view class="traveler-avatar">{{item.avatarText}}</view>
+          <view class="traveler-copy"><text>{{item.name}}</text><text>身份证 {{item.maskedIdCard}}</text><text>手机号 {{item.maskedPhone}}</text></view>
+          <view class="traveler-actions"><button data-id="{{item.id}}" bindtap="editTraveler">编辑</button><button data-id="{{item.id}}" bindtap="deleteTraveler">删除</button></view>
+        </view>
+        <button class="panel-primary" bindtap="startAddTraveler">＋ 新增常用旅客</button>
+      </view>
+
+      <view wx:if="{{activePanel==='travelerEdit'}}" class="traveler-editor">
+        <view class="form-field"><text>姓名</text><input value="{{travelerForm.name}}" maxlength="12" bindinput="travelerNameInput" placeholder="请输入真实姓名"/></view>
+        <view class="form-field"><text>身份证号</text><input value="{{travelerForm.idCard}}" maxlength="18" bindinput="travelerIdCardInput" placeholder="请输入18位身份证号"/></view>
+        <view class="form-field"><text>手机号</text><input type="number" value="{{travelerForm.phone}}" maxlength="11" bindinput="travelerPhoneInput" placeholder="请输入手机号"/></view>
+        <view class="traveler-safe-note"><text>安</text><text>身份信息通过登录态接口传输，身份证号和手机号在后端数据库中加密保存。</text></view>
+        <button class="panel-primary" bindtap="saveTraveler">保存常用旅客</button>
+      </view>
+
+      <view wx:if="{{activePanel==='about'}}" class="about-panel"><view class="about-mark">i某小程序</view><text>i某小程序产业服务平台</text><text>整合住宿、餐饮、景区体验、车辆、休闲场馆与特色商品服务，为游客提供统一的查询、预订和订单管理入口。</text><view>服务数据以后台发布内容为准</view></view>
+
+      <view wx:if="{{activePanel==='settings'}}" class="settings-panel">
+        <view class="switch-row"><view><text>微信订阅消息</text><text>需由您主动授权，模板未配置时不会外发</text></view><switch checked="{{notificationEnabled}}" disabled="{{notificationSaving}}" color="#aa4a32" bindchange="notificationChange"/></view>
+        <view class="switch-row"><view><text>短信订单提醒</text><text>订单核销、司机接单和退款进度</text></view><switch checked="{{orderReminderEnabled}}" disabled="{{notificationSaving}}" color="#aa4a32" bindchange="orderReminderChange"/></view>
+        <view class="agreement-links"><button data-type="user" bindtap="openAgreement">用户服务协议 <text>›</text></button><button data-type="privacy" bindtap="openAgreement">隐私保护政策 <text>›</text></button></view>
+        <button class="account-button" bindtap="logoutAccount">退出登录</button>
+        <button class="account-button danger-account" bindtap="cancelMyAccount">注销账号</button>
+        <view class="settings-note">注销前必须完成所有订单并处理会员余额。注销后依法保留的交易记录将进行匿名化关联。</view>
+      </view>
+      <view class="panel-safe-space"></view>
+    </scroll-view>
+  </view>
+  </block>
+</view>

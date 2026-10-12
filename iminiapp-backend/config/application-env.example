@@ -1,0 +1,56 @@
+# Copy these values into the IDEA Run Configuration environment variables.
+DB_URL=jdbc:mysql://localhost:3306/iminiapp?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai
+DB_USERNAME=root
+DB_PASSWORD=replace_with_local_password
+REDIS_HOST=localhost
+REDIS_PORT=6379
+REDIS_PASSWORD=replace_with_local_redis_password
+AUTH_TOKEN_STORE=redis
+RATE_LIMIT_ENABLED=true
+SERVER_PORT=8080
+VERIFICATION_SIGNING_KEY=replace_with_a_shared_development_key
+HOTEL_CHECKIN_SIGNING_KEY=replace_with_a_different_random_secret_of_at_least_32_characters
+PERSON_DATA_KEY=replace_with_a_random_secret_of_at_least_32_characters
+GATE_SECRET_ENCRYPTION_KEY=replace_with_a_different_random_secret_of_at_least_32_characters
+
+# WeChat Pay API v3 stays fail-closed until every value below is supplied and
+# WECHAT_PAY_V3_ENABLED is explicitly changed to true. Never commit real keys.
+WECHAT_PAY_V3_ENABLED=false
+WECHAT_PAY_V3_APP_ID=replace_with_mini_program_app_id
+WECHAT_PAY_V3_MERCHANT_ID=replace_with_merchant_id
+WECHAT_PAY_V3_MERCHANT_SERIAL_NUMBER=replace_with_merchant_certificate_serial
+WECHAT_PAY_V3_PRIVATE_KEY_PATH=replace_with_absolute_path_to_apiclient_key_pem
+WECHAT_PAY_V3_API_V3_KEY=replace_with_exactly_32_byte_api_v3_key
+WECHAT_PAY_V3_PLATFORM_PUBLIC_KEY_PATH=replace_with_absolute_path_to_platform_public_key_or_certificate
+WECHAT_PAY_V3_PLATFORM_KEY_ID=replace_with_platform_public_key_id_or_certificate_serial
+WECHAT_PAY_V3_PAYMENT_NOTIFY_URL=
+WECHAT_PAY_V3_REFUND_NOTIFY_URL=
+
+# Notification delivery also uses fail-closed switches. Template values are IDs/codes,
+# never secrets. Do not enable until user subscription consent and real providers are verified.
+NOTIFICATION_SENDING_ENABLED=false
+NOTIFICATION_WORKER_ENABLED=false
+NOTIFICATION_WECHAT_ENABLED=false
+APP_NOTIFICATION_WECHAT_MINIPROGRAM_STATE=formal
+APP_NOTIFICATION_WECHAT_CONNECT_TIMEOUT=5s
+APP_NOTIFICATION_WECHAT_READ_TIMEOUT=10s
+WECHAT_TEMPLATE_ORDER_CREATED=
+WECHAT_TEMPLATE_ORDER_PAID=
+WECHAT_TEMPLATE_ORDER_COMPLETED=
+WECHAT_TEMPLATE_ORDER_REFUNDED=
+WECHAT_TEMPLATE_ORDER_WAITING_DRIVER=
+WECHAT_TEMPLATE_ORDER_ACCEPTED=
+# Comma-separated payloadKey:WeChatKeywordId; obtain keyword IDs from the selected template.
+# Allowed payload keys: orderNo,status,previousStatus. Example only: orderNo:character_string1,status:phrase2
+WECHAT_FIELDS_ORDER_CREATED=
+WECHAT_FIELDS_ORDER_PAID=
+WECHAT_FIELDS_ORDER_COMPLETED=
+WECHAT_FIELDS_ORDER_REFUNDED=
+WECHAT_FIELDS_ORDER_WAITING_DRIVER=
+WECHAT_FIELDS_ORDER_ACCEPTED=
+SMS_TEMPLATE_ORDER_CREATED=
+SMS_TEMPLATE_ORDER_PAID=
+SMS_TEMPLATE_ORDER_COMPLETED=
+SMS_TEMPLATE_ORDER_REFUNDED=
+SMS_TEMPLATE_ORDER_WAITING_DRIVER=
+SMS_TEMPLATE_ORDER_ACCEPTED=

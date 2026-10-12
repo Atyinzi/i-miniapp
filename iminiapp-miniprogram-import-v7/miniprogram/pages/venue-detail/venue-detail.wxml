@@ -1,0 +1,106 @@
+<view class="detail-page">
+  <view class="detail-nav" style="height:{{navHeight}}px;padding-top:{{statusBarHeight}}px">
+    <button class="nav-back" bindtap="backHome" aria-label="返回首页">
+      <text class="back-arrow">‹</text>
+      <text>首页</text>
+    </button>
+    <text class="nav-title">示例宾馆</text>
+    <button class="nav-share" style="right:{{shareRight}}px" bindtap="openSharePanel" aria-label="分享示例宾馆">
+      <text>↗</text>
+    </button>
+  </view>
+
+  <view class="page detail-content" style="padding-top:{{contentTop}}px">
+    <view class="detail-cover">
+      <view class="cover-word">NORTH<br/>HOTEL</view>
+      <view class="cover-caption">老厂房改造的温暖居所</view>
+    </view>
+    <view class="detail-name">示例宾馆 · 雅致大床房</view>
+    <view class="detail-address">⌖ i某小程序文化园东门 100 米 · 距兵器城 800 米</view>
+    <view class="venue-map-card card">
+      <view><view><text>地图与导航</text><text>{{venueLocation.address}}</text></view><button bindtap="navigateToVenue">一键导航</button></view>
+      <map wx:if="{{venueLocation.configured}}" class="venue-map" latitude="{{venueLocation.latitude}}" longitude="{{venueLocation.longitude}}" markers="{{venueLocationMarkers}}" scale="16"></map>
+      <view wx:else class="venue-map-pending"><text>位置待配置</text><text>公司确认 GCJ-02 坐标后自动启用地图和导航</text></view>
+    </view>
+    <view class="stat-row card">
+      <view><b>4.9</b><text>住客评分</text></view>
+      <view><b>35㎡</b><text>房间面积</text></view>
+      <view><b>2人</b><text>可住人数</text></view>
+    </view>
+    <view class="detail-section">
+      <text class="section-title">房间介绍</text>
+      <text class="section-content">原木与金属的碰撞，保留i某小程序工业印记。大窗采光、智能客控与舒适床品，让旅途安然入眠。</text>
+    </view>
+    <view class="detail-section">
+      <text class="section-title">设施服务</text>
+      <view class="amenities">
+        <text>☕ 双人早餐</text>
+        <text>⌁ 免费停车</text>
+        <text>◉ 无线网络</text>
+        <text>♧ 洗衣服务</text>
+      </view>
+    </view>
+
+    <view class="meeting-section">
+      <view class="meeting-heading">
+        <view>
+          <text class="section-title">会议展示</text>
+          <text class="meeting-subtitle">按参会人数快速选择合适场地</text>
+        </view>
+        <view class="meeting-heading-icon">会</view>
+      </view>
+      <scroll-view class="meeting-filters" scroll-x enable-flex enhanced show-scrollbar="{{false}}">
+        <button
+          class="meeting-filter {{activeMeetingFilter === index ? 'meeting-filter-active' : ''}}"
+          wx:for="{{meetingFilters}}"
+          wx:key="label"
+          data-index="{{index}}"
+          bindtap="changeMeetingFilter"
+        >{{item.label}}</button>
+      </scroll-view>
+      <view class="meeting-list">
+        <view
+          class="meeting-card card"
+          wx:for="{{visibleMeetings}}"
+          wx:key="name"
+          data-index="{{index}}"
+          bindtap="openMeeting"
+          hover-class="meeting-card-active"
+        >
+          <view class="meeting-photo {{item.style}}">
+            <text class="meeting-photo-mark">{{item.mark}}</text>
+            <text class="meeting-photo-label">MEETING ROOM</text>
+          </view>
+          <view class="meeting-info">
+            <view class="meeting-name-row">
+              <text class="meeting-name">{{item.name}}</text>
+              <text class="meeting-capacity">可容纳 {{item.capacity}} 人</text>
+            </view>
+            <text class="meeting-equipment">{{item.equipment}}</text>
+            <view class="meeting-meta">
+              <view>
+                <text class="meeting-price">{{item.price}}</text>
+                <text class="meeting-time">{{item.time}}</text>
+              </view>
+              <text class="meeting-more">查看详情 ›</text>
+            </view>
+          </view>
+        </view>
+      </view>
+      <view class="meeting-empty" wx:if="{{!visibleMeetings.length}}">暂无符合人数要求的会议室</view>
+    </view>
+
+    <view class="bottom-book">
+      <view><text class="from">¥</text><text class="bottom-price">368</text><text class="from"> /晚起</text></view>
+      <button class="primary-btn" bindtap="toBooking">立即预订</button>
+    </view>
+  </view>
+  <view wx:if="{{sharePanelVisible}}" class="share-channel-mask" bindtap="closeSharePanel" catchtouchmove="preventShareTap">
+    <view class="share-channel-panel" catchtap="preventShareTap">
+      <view class="share-channel-head"><view><text>分享到</text><text>使用微信原生分享</text></view><button bindtap="closeSharePanel">×</button></view>
+      <view class="share-channel-options">
+        <button open-type="share" bindtap="closeSharePanel"><view class="share-channel-icon wechat-channel">微</view><view><text>微信好友</text><text>使用微信原生分享</text></view><text>›</text></button>
+      </view>
+    </view>
+  </view>
+</view>

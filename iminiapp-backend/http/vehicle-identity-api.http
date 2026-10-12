@@ -1,0 +1,145 @@
+@baseUrl = http://localhost:8080
+@userToken = 请粘贴微信用户登录返回的访问令牌
+@adminToken = 请粘贴管理员登录返回的访问令牌
+@employeeNo = YG0001
+@employeeId = 1
+@departmentId = 1
+@userId = 1
+@driverId = 1
+@dispatchId = 1
+
+### 1. 查询当前微信用户的员工身份
+GET {{baseUrl}}/api/v1/app/vehicle-employees/me
+Authorization: Bearer {{userToken}}
+
+### 2. 员工自助绑定：必须先完成微信手机号授权，手机号须与员工档案一致
+POST {{baseUrl}}/api/v1/app/vehicle-employees/bind
+Authorization: Bearer {{userToken}}
+Content-Type: application/json
+
+{
+  "employeeNo": "{{employeeNo}}"
+}
+
+### 3. 已绑定且在职的员工提交内部用车申请
+POST {{baseUrl}}/api/v1/app/vehicle-applications
+Authorization: Bearer {{userToken}}
+Idempotency-Key: vehicle-internal-{{$timestamp}}
+Content-Type: application/json
+
+{
+  "startAt": "2026-08-20T08:30:00",
+  "endAt": "2026-08-20T17:30:00",
+  "departure": "i某小程序集团办公楼",
+  "destination": "示例景区",
+  "passengerCount": 5,
+  "estimatedKm": 60,
+  "purpose": "景区运营现场协调"
+}
+
+> {% client.global.set("vehicleApplicationId", response.body.data.id); %}
+
+### 4. 员工取消尚未审批的内部用车申请
+POST {{baseUrl}}/api/v1/app/vehicle-applications/{{vehicleApplicationId}}/cancel
+Authorization: Bearer {{userToken}}
+
+### 5. 管理员查询部门
+GET {{baseUrl}}/api/v1/admin/vehicle-departments
+Authorization: Bearer {{adminToken}}
+
+### 6. 管理员创建部门
+POST {{baseUrl}}/api/v1/admin/vehicle-departments
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "departmentCode": "WLJQ",
+  "departmentName": "文旅景区运营部",
+  "parentId": null,
+  "status": "ACTIVE"
+}
+
+### 7. 管理员创建员工档案：姓名和手机号入库时自动加密
+POST {{baseUrl}}/api/v1/admin/vehicle-employees
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "employeeNo": "{{employeeNo}}",
+  "name": "测试员工",
+  "mobile": "13800000001",
+  "departmentId": {{departmentId}},
+  "status": "ACTIVE",
+  "userId": null
+}
+
+### 8. 管理员查询员工档案：敏感字段只返回脱敏值
+GET {{baseUrl}}/api/v1/admin/vehicle-employees?status=ACTIVE
+Authorization: Bearer {{adminToken}}
+
+### 9. 管理员把员工档案绑定到微信用户
+PUT {{baseUrl}}/api/v1/admin/vehicle-employees/{{employeeId}}/account
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "userId": {{userId}}
+}
+
+### 10. 管理员解绑员工微信账号
+DELETE {{baseUrl}}/api/v1/admin/vehicle-employees/{{employeeId}}/account
+Authorization: Bearer {{adminToken}}
+
+### 11. 管理员把司机档案绑定到微信用户
+PUT {{baseUrl}}/api/v1/admin/vehicle-drivers/{{driverId}}/account
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "userId": {{userId}}
+}
+
+### 12. 司机查询自己的身份
+GET {{baseUrl}}/api/v1/app/driver/profile
+Authorization: Bearer {{userToken}}
+
+### 13. 司机查询自己的全部任务：内部用车与社会租赁都从这里进入
+GET {{baseUrl}}/api/v1/app/driver/tasks
+Authorization: Bearer {{userToken}}
+
+### 14. 司机接单
+POST {{baseUrl}}/api/v1/app/driver/tasks/{{dispatchId}}/accept
+Authorization: Bearer {{userToken}}
+
+### 15. 司机确认出发
+POST {{baseUrl}}/api/v1/app/driver/tasks/{{dispatchId}}/depart
+Authorization: Bearer {{userToken}}
+
+### 16. 司机上报位置：微信坐标统一使用 GCJ02
+POST {{baseUrl}}/api/v1/app/driver/tasks/{{dispatchId}}/locations
+Authorization: Bearer {{userToken}}
+Content-Type: application/json
+
+{
+  "longitude": 109.84025,
+  "latitude": 40.65741,
+  "coordinateSystem": "GCJ02",
+  "mileageKm": 12860.5,
+  "eventAt": "2026-08-20T09:10:00",
+  "remark": "已到达景区入口"
+}
+
+### 17. 司机完成任务：社会租赁任务会进入还车结算，不能绕过结算流程
+POST {{baseUrl}}/api/v1/app/driver/tasks/{{dispatchId}}/complete
+Authorization: Bearer {{userToken}}
+Content-Type: application/json
+
+{
+  "endMileageKm": 12920.5,
+  "fuelLiter": 8.3,
+  "remark": "已安全返回，车辆状况正常"
+}
+
+### 18. 管理员解绑司机微信账号：存在未完成任务时会拒绝解绑
+DELETE {{baseUrl}}/api/v1/admin/vehicle-drivers/{{driverId}}/account
+Authorization: Bearer {{adminToken}}

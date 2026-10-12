@@ -1,0 +1,70 @@
+<view class="verification-page">
+  <view class="hero">
+    <view class="hero-head"><text>工作人员核销</text><text class="environment-tag">独立员工会话</text></view>
+    <text>工作人员账号与游客微信账号完全隔离</text>
+    <view class="connection connection-{{connectionStatus}}">
+      <text class="connection-dot"></text>
+      <view><text>{{connectionLabel}}</text><text wx:if="{{operatorName}}"> · {{operatorName}}</text></view>
+      <button wx:if="{{loggedIn}}" bindtap="exitStaffSession">安全退出</button>
+    </view>
+  </view>
+
+  <view wx:if="{{!available}}" class="unavailable-card card">
+    <text class="unavailable-icon">禁</text>
+    <text>当前版本未启用核销工作台</text>
+    <text>该入口默认隐藏，只有部署配置明确启用后才能登录。</text>
+    <button bindtap="goBack">返回上一页</button>
+  </view>
+
+  <view wx:elif="{{!loggedIn}}" class="login-card card">
+    <view class="operation-title"><view><text>工作人员登录</text><text>使用管理后台分配的核销员账号</text></view><text>身份</text></view>
+    <block wx:if="{{loginFormVisible}}">
+      <view class="login-field"><text>用户名</text><input value="{{username}}" bindinput="usernameInput" maxlength="64" placeholder="请输入后台用户名" /></view>
+      <view class="login-field"><text>密码</text><input bindinput="passwordInput" maxlength="128" password="{{!passwordVisible}}" placeholder="请输入密码" /><button bindtap="togglePassword">{{passwordVisible?'隐藏':'显示'}}</button></view>
+    </block>
+    <button class="primary-button" loading="{{loginSubmitting}}" disabled="{{loginSubmitting||!username||!hasPassword}}" bindtap="submitStaffLogin">登录核销工作台</button>
+    <text class="security-tip">密码不会保存；退出或登录失败后立即从页面清除。</text>
+    <text wx:if="{{lastError}}" class="login-error">{{lastError}}</text>
+  </view>
+
+  <block wx:elif="{{loggedIn}}">
+    <view class="operation-card card">
+      <view class="operation-title"><view><text>票码核销</text><text>支持二维码扫描或手动输入</text></view><text>01</text></view>
+      <button class="scan-button" disabled="{{connectionStatus!=='READY'||submitting}}" bindtap="scanAndConsume">
+        <text class="scan-frame">扫</text><view><text>扫码并核销</text><text>扫描游客电子票二维码</text></view>
+      </button>
+      <view class="divider"><text></text><text>或手动输入</text><text></text></view>
+      <view class="code-input"><input value="{{ticketCode}}" bindinput="ticketCodeInput" disabled="{{submitting}}" maxlength="80" placeholder="例如 BFHV-123-1-XXXXXXXXXXXX"/><button loading="{{submitting}}" disabled="{{connectionStatus!=='READY'||submitting||!ticketCode}}" bindtap="submitTicketCode">确认核销</button></view>
+    </view>
+
+    <view wx:if="{{lastResult}}" class="result-card result-success card">
+      <view class="result-mark">✓</view>
+      <view class="result-head"><view><text>核销成功</text><text>{{lastResult.verifiedAtLabel}}</text></view><button bindtap="clearResult">×</button></view>
+      <view class="result-grid">
+        <view><text>项目</text><text>{{lastResult.resourceName}}</text></view>
+        <view><text>票号</text><text>第 {{lastResult.ticketNo}} 张</text></view>
+        <view><text>服务日期</text><text>{{lastResult.serviceDate || '未指定'}}</text></view>
+        <view><text>订单号</text><text>{{lastResult.orderNo}}</text></view>
+        <view><text>核销方式</text><text>{{lastResult.methodLabel}}</text></view>
+        <view><text>凭证</text><text>{{lastResult.credentialLabel}}</text></view>
+      </view>
+      <view class="release-tip">核销状态已写入后端，可以放行</view>
+    </view>
+
+    <view wx:if="{{lastError}}" class="result-card result-error card">
+      <view class="result-mark">!</view>
+      <view class="result-head"><view><text>本次未核销</text><text>{{lastError}}</text></view><button bindtap="clearResult">×</button></view>
+      <view class="stop-tip">请核实原因，已核销或已失效的电子票不得重复放行</view>
+    </view>
+
+    <view class="history-section">
+      <view class="section-head"><view><text>本次核销历史</text><text>退出或页面关闭后自动清空，不写入本地存储</text></view><text>{{history.length}} 条</text></view>
+      <view wx:if="{{!history.length}}" class="history-empty card"><text>空</text><text>尚无核销记录</text><text>完成扫码或票码核销后，结果会显示在这里。</text></view>
+      <view wx:for="{{history}}" wx:key="id" class="history-item card">
+        <text class="history-status {{item.success?'history-success':'history-failed'}}">{{item.success?'✓':'!'}}</text>
+        <view class="history-copy"><view><text>{{item.statusLabel}}</text><text>{{item.verifiedAtLabel}}</text></view><text>{{item.resourceName || item.errorMessage}}</text><text>{{item.methodLabel}} · {{item.credentialLabel}}{{item.orderNo?' · '+item.orderNo:''}}</text></view>
+      </view>
+    </view>
+  </block>
+  <view class="safe-space"></view>
+</view>

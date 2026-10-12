@@ -1,0 +1,63 @@
+CREATE TABLE bf_hotel_reservation (
+    id BIGINT PRIMARY KEY AUTO_INCREMENT,
+    reservation_no VARCHAR(40) NOT NULL UNIQUE,
+    order_id BIGINT NOT NULL UNIQUE,
+    primary_order_item_id BIGINT NOT NULL UNIQUE,
+    hotel_id BIGINT NOT NULL,
+    room_type_id BIGINT NOT NULL,
+    check_in_date DATE NOT NULL,
+    check_out_date DATE NOT NULL,
+    room_count INT NOT NULL,
+    guest_count INT NOT NULL,
+    contact_name_cipher VARBINARY(512) NOT NULL,
+    contact_mobile_cipher VARBINARY(512) NOT NULL,
+    estimated_arrival_time TIME,
+    special_requests VARCHAR(1000),
+    previous_reservation_id BIGINT,
+    superseded_by_reservation_id BIGINT,
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    INDEX idx_hotel_reservation_dates (hotel_id, check_in_date, check_out_date),
+    INDEX idx_hotel_reservation_room_type (room_type_id, check_in_date),
+    CONSTRAINT fk_hotel_reservation_order FOREIGN KEY (order_id) REFERENCES bf_order(id),
+    CONSTRAINT fk_hotel_reservation_item FOREIGN KEY (primary_order_item_id) REFERENCES bf_order_item(id),
+    CONSTRAINT fk_hotel_reservation_hotel FOREIGN KEY (hotel_id) REFERENCES bf_hotel(id),
+    CONSTRAINT fk_hotel_reservation_room_type FOREIGN KEY (room_type_id) REFERENCES bf_hotel_room_type(id),
+    CONSTRAINT fk_hotel_reservation_previous FOREIGN KEY (previous_reservation_id) REFERENCES bf_hotel_reservation(id),
+    CHECK (check_out_date > check_in_date),
+    CHECK (room_count > 0 AND guest_count > 0)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='住宿预订主单';
+
+CREATE TABLE bf_hotel_reservation_guest (
+    id BIGINT PRIMARY KEY AUTO_INCREMENT,
+    reservation_id BIGINT NOT NULL,
+    room_index INT NOT NULL DEFAULT 1,
+    name_cipher VARBINARY(512) NOT NULL,
+    mobile_cipher VARBINARY(512),
+    id_type VARCHAR(20) NOT NULL,
+    id_no_cipher VARBINARY(512) NOT NULL,
+    id_no_hash CHAR(64) NOT NULL,
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    INDEX idx_hotel_guest_reservation (reservation_id),
+    INDEX idx_hotel_guest_id_hash (id_no_hash),
+    CONSTRAINT fk_hotel_guest_reservation FOREIGN KEY (reservation_id) REFERENCES bf_hotel_reservation(id),
+    CHECK (room_index > 0)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='住宿订单入住人';
+
+CREATE TABLE bf_hotel_inventory_alert (
+    id BIGINT PRIMARY KEY AUTO_INCREMENT,
+    room_type_id BIGINT NOT NULL,
+    business_date DATE NOT NULL,
+    order_id BIGINT,
+    alert_type VARCHAR(30) NOT NULL,
+    available_quantity INT NOT NULL,
+    threshold_quantity INT NOT NULL,
+    status VARCHAR(20) NOT NULL DEFAULT 'OPEN',
+    message VARCHAR(500) NOT NULL,
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    resolved_at DATETIME,
+    UNIQUE KEY uk_hotel_inventory_alert (room_type_id, business_date, alert_type, status),
+    INDEX idx_hotel_inventory_alert_status (status, created_at),
+    CONSTRAINT fk_hotel_inventory_alert_room_type FOREIGN KEY (room_type_id) REFERENCES bf_hotel_room_type(id),
+    CONSTRAINT fk_hotel_inventory_alert_order FOREIGN KEY (order_id) REFERENCES bf_order(id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='酒店低库存和超售风险预警';

@@ -1,0 +1,7 @@
+<view class="page">
+  <view class="document-head"><text>{{document.title}}</text><text>{{document.version}} · 正式上线前需法务确认</text></view>
+  <view class="notice">本页面已完成产品与交互框架。带有“待补充”的主体信息，需要运营公司提供后替换。</view>
+  <view wx:for="{{document.sections}}" wx:key="index" class="section">
+    <text>{{item[0]}}</text><text>{{item[1]}}</text>
+  </view>
+</view>

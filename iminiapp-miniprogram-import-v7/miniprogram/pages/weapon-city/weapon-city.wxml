@@ -1,0 +1,142 @@
+<view class="weapon-page">
+  <view class="weapon-nav" style="height:{{navHeight}}px;padding-top:{{statusBarHeight}}px">
+    <button class="nav-back" bindtap="backHome"><text>‹</text><text>首页</text></button>
+    <text class="nav-title">示例景区</text>
+    <button class="nav-share" style="right:{{shareRight}}px" bindtap="openSharePanel" aria-label="分享示例景区">↗</button>
+  </view>
+  <view wx:if="{{sharePanelVisible}}" class="share-channel-mask" bindtap="closeSharePanel" catchtouchmove="preventShareTap"><view class="share-channel-panel" catchtap="preventShareTap"><view class="share-channel-head"><view><text>分享到</text><text>使用微信原生分享</text></view><button bindtap="closeSharePanel">×</button></view><view class="share-channel-options"><button open-type="share" bindtap="closeSharePanel"><view class="share-channel-icon wechat-channel">微</view><view><text>微信好友</text><text>使用微信原生分享</text></view><text>›</text></button></view></view></view>
+
+  <view class="page weapon-content" style="padding-top:{{contentTop}}px">
+    <view class="weapon-hero">
+      <text class="hero-en">NORTHERN WEAPON CITY</text>
+      <text class="hero-title">示例景区</text>
+      <text class="hero-desc">i某小程序特色文旅地标 · 各类兵器展品与军事体验</text>
+      <view class="hero-art"><text>兵</text><view></view><text>器</text></view>
+      <text class="hero-image-note">入口授权实景图待补充</text>
+    </view>
+    <view class="venue-map-card card">
+      <view><view><text>示例景区地图</text><text>{{venueLocation.address}}</text></view><button bindtap="navigateToVenue">一键导航</button></view>
+      <map wx:if="{{venueLocation.configured}}" class="venue-map" latitude="{{venueLocation.latitude}}" longitude="{{venueLocation.longitude}}" markers="{{venueLocationMarkers}}" scale="16"></map>
+      <view wx:else class="venue-map-pending"><text>位置待配置</text><text>公司确认 GCJ-02 坐标后自动启用</text></view>
+    </view>
+
+    <view class="intro card">
+      <view class="intro-mark">1953</view>
+      <view><text>一城兵器史，一段i某小程序记忆</text><text>线上购票无需排队，电子票扫码核销，便捷入园。</text></view>
+    </view>
+
+    <view class="module-tabs">
+      <button class="{{activeModule==='tickets'?'active':''}}" data-module="tickets" bindtap="switchModule">门票售卖</button>
+      <button class="{{activeModule==='experiences'?'active':''}}" data-module="experiences" bindtap="switchModule">军事体验</button>
+    </view>
+
+    <view class="date-section">
+      <view class="section-head"><view><text class="section-title">选择日期</text><text class="section-sub">可选择未来7天入园或体验日期</text></view><text>日期可筛选</text></view>
+      <scroll-view class="date-scroll" scroll-x show-scrollbar="{{false}}">
+        <button wx:for="{{dates}}" wx:key="value" class="date-chip {{activeDate===item.value?'date-active':''}}" data-date="{{item.value}}" bindtap="selectDate"><text>{{item.week}}</text><text>{{item.day}}</text></button>
+      </scroll-view>
+    </view>
+
+    <view wx:if="{{catalogLoading}}" class="notice-card"><text>正在读取实时票价与库存…</text></view>
+    <view wx:elif="{{catalogError}}" class="notice-card"><text>{{catalogError}}</text><button bindtap="retryCatalog">重新加载</button></view>
+
+    <view wx:if="{{activeModule==='tickets' && !catalogLoading && !catalogError}}" class="module-content">
+      <view class="section-head"><view><text class="section-title">门票类型</text><text class="section-sub">按适用人群选择，购买前请阅读规则</text></view><text>共{{tickets.length}}种</text></view>
+      <view wx:if="{{!tickets.length}}" class="notice-card"><text>当前日期暂无可售门票</text></view>
+      <view class="ticket-card card" wx:for="{{tickets}}" wx:key="id">
+        <view class="ticket-side"><text>{{item.badge}}</text><text>TICKET</text></view>
+        <view class="ticket-info">
+          <view><text class="item-name">{{item.name}}</text><text class="ticket-audience">{{item.audience}}</text></view>
+          <text class="ticket-rule">{{item.rule}}</text>
+          <view class="item-bottom"><view><text class="price-mark">¥</text><text class="item-price">{{item.price}}</text><text class="price-unit">{{item.unit}}</text></view><button data-id="{{item.id}}" bindtap="openTicketOrder" disabled="{{!item.available}}">{{item.available?'立即购买':'已售罄'}}</button></view>
+        </view>
+      </view>
+      <view class="notice-card">
+        <text>购票与入园须知</text>
+        <text>• 入园前1天可申请全额退款，当天票不退。</text>
+        <text>• 请在开放时间内入园，禁止携带危险及违禁物品。</text>
+        <text>• 购买成功后可在“我的-订单”查看电子票。</text>
+      </view>
+    </view>
+
+    <view wx:if="{{activeModule==='experiences' && !catalogLoading && !catalogError}}" class="module-content">
+      <view class="section-head"><view><text class="section-title">军事体验项目</text><text class="section-sub">实时分时库存，须遵守现场人员指导</text></view><text>共{{projects.length}}项</text></view>
+      <view wx:if="{{!projects.length}}" class="notice-card"><text>当前日期暂无体验项目</text></view>
+      <view class="project-card card" wx:for="{{projects}}" wx:key="id">
+        <button class="project-art" data-id="{{item.id}}" bindtap="previewProjectImage" aria-label="预览{{item.name}}图片">
+          <image src="{{item.image}}" mode="aspectFill"/>
+          <view class="project-image-hint"><text>查看大图</text><text>⌕</text></view>
+        </button>
+        <view class="project-info">
+          <view><text class="item-name">{{item.name}}</text><text class="project-duration">{{item.duration}}</text></view>
+          <text class="project-desc">{{item.description}}</text>
+          <text class="project-audience">{{item.audience}}</text>
+          <view class="item-bottom"><view><text class="price-mark">¥</text><text class="item-price">{{item.price}}</text><text class="price-unit">{{item.unit}}</text></view><button data-id="{{item.id}}" bindtap="openExperienceOrder" disabled="{{!item.available}}">{{item.available?'预约体验':'已约满'}}</button></view>
+        </view>
+      </view>
+      <view class="notice-card">
+        <text>体验注意事项</text>
+        <text>• 必须遵守现场工作人员指导，禁止违规操作。</text>
+        <text>• 体验前1小时可全额退款，逾期不退。</text>
+        <text>• 预约成功后凭核销码前往体验基地参与。</text>
+      </view>
+    </view>
+  </view>
+
+  <view wx:if="{{ticketOrderVisible}}" class="sheet-mask" bindtap="closeTicketOrder">
+    <view class="order-sheet" catchtap="stopTap">
+      <view class="sheet-head"><view><text>购买{{selectedTicket.name}}</text><text>{{activeDate}} 入园</text></view><button bindtap="closeTicketOrder">×</button></view>
+      <view class="quantity-row"><text>购买数量</text><view><button data-delta="-1" bindtap="adjustTicketQuantity">−</button><text>{{ticketQuantity}}</text><button data-delta="1" bindtap="adjustTicketQuantity">＋</button></view></view>
+      <view class="form-card">
+        <input placeholder="入园人姓名" value="{{visitorName}}" data-field="visitorName" bindinput="ticketFieldInput"/>
+        <input placeholder="身份证号" value="{{visitorIdCard}}" data-field="visitorIdCard" bindinput="ticketFieldInput"/>
+        <input type="number" maxlength="11" placeholder="手机号码" value="{{visitorPhone}}" data-field="visitorPhone" bindinput="ticketFieldInput"/>
+      </view>
+      <view class="sheet-rule">实时票价 ¥{{selectedTicket.price}}{{selectedTicket.unit}}，剩余{{selectedTicket.availableQuantity}}份；提交后请前往订单中心完成支付。</view>
+      <button class="sheet-submit" loading="{{ticketSubmitting}}" disabled="{{ticketSubmitting}}" bindtap="submitTicketOrder">{{ticketSubmitting?'提交中':'提交购票订单'}}</button>
+    </view>
+  </view>
+
+  <view wx:if="{{experienceOrderVisible}}" class="sheet-mask" bindtap="closeExperienceOrder">
+    <view class="order-sheet" catchtap="stopTap">
+      <view class="sheet-head"><view><text>预约{{selectedProject.name}}</text><text>{{activeDate}} · {{selectedProject.duration}}</text></view><button bindtap="closeExperienceOrder">×</button></view>
+      <picker mode="selector" range="{{timeSlots}}" value="{{timeSlotIndex}}" bindchange="timeSlotChange"><view class="slot-picker"><text>体验时段</text><text>{{timeSlots[timeSlotIndex]}} ›</text></view></picker>
+      <view class="form-card">
+        <input placeholder="体验人姓名" value="{{experienceName}}" data-field="experienceName" bindinput="experienceFieldInput"/>
+        <input placeholder="身份证号" value="{{experienceIdCard}}" data-field="experienceIdCard" bindinput="experienceFieldInput"/>
+        <input type="number" maxlength="11" placeholder="手机号码" value="{{experiencePhone}}" data-field="experiencePhone" bindinput="experienceFieldInput"/>
+      </view>
+      <view class="sheet-rule">实时票价 ¥{{selectedProject.price}}{{selectedProject.unit}}；须符合项目年龄及安全要求，提交后请前往订单中心完成支付。</view>
+      <button class="sheet-submit" loading="{{experienceSubmitting}}" disabled="{{experienceSubmitting}}" bindtap="submitExperienceOrder">{{experienceSubmitting?'提交中':'提交体验订单'}}</button>
+    </view>
+  </view>
+
+  <view wx:if="{{ticketResultVisible}}" class="result-mask">
+    <view class="result-card">
+      <text class="result-check">✓</text><text class="result-title">订单提交成功</text>
+      <text>订单号 {{ticketResult.orderNo}}</text><text>应付金额：¥{{ticketResult.payableAmountCent/100}}</text>
+      <text class="result-hint">订单状态：待支付。请前往“我的-订单”完成支付；支付成功后生成电子票。</text><button bindtap="goToOrders">前往我的订单</button>
+    </view>
+  </view>
+
+  <view wx:if="{{experienceResultVisible}}" class="result-mask">
+    <view class="result-card">
+      <text class="result-check">✓</text><text class="result-title">体验订单已提交</text>
+      <text>订单号 {{experienceResult.orderNo}}</text><text>{{experienceResult.serviceDate}} · {{experienceResult.timeSlot}}</text>
+      <text class="result-hint">订单状态：待支付。支付完成后预约生效，请按时到达并服从现场工作人员指导。</text><button bindtap="goToOrders">前往我的订单</button>
+    </view>
+  </view>
+
+  <view wx:if="{{projectPreviewVisible}}" class="project-preview-mask" bindtap="closeProjectPreview">
+    <view class="project-preview-panel" catchtap="stopTap">
+      <view class="project-preview-head">
+        <view><text>{{projectPreviewTitle}}</text><text>军事体验项目图片</text></view>
+        <button bindtap="closeProjectPreview" aria-label="关闭图片预览">×</button>
+      </view>
+      <view class="project-preview-image">
+        <image src="{{projectPreviewImage}}" mode="aspectFit"/>
+      </view>
+      <text class="project-preview-hint">点击深色空白区域或右上角关闭</text>
+    </view>
+  </view>
+</view>

@@ -1,0 +1,805 @@
+# 登录接口会通过响应脚本自动保存 userToken、adminToken 和 opsToken。
+# 后端每次重启后，都需要重新执行第2、3、4步生成新令牌。
+# 第8步创建订单成功后会自动保存 orderId。
+
+### 1. 健康检查：确认后端已经启动
+GET http://localhost:8080/api/v1/app/system/health
+
+### 2. 普通用户模拟登录：成功后自动保存 userToken
+POST http://localhost:8080/api/v1/app/auth/mock-login
+Content-Type: application/json
+
+{
+  "displayName": "模块开发人员",
+  "accountType": "USER"
+}
+
+> {%
+    client.global.set("userToken", response.body.data.accessToken);
+%}
+
+### 3. 管理员模拟登录：成功后自动保存 adminToken
+POST http://localhost:8080/api/v1/app/auth/mock-login
+Content-Type: application/json
+
+{
+  "displayName": "资源管理员",
+  "accountType": "ADMIN"
+}
+
+> {%
+    client.global.set("adminToken", response.body.data.accessToken);
+%}
+
+### 4. 运维人员模拟登录：成功后自动保存 opsToken
+POST http://localhost:8080/api/v1/app/auth/mock-login
+Content-Type: application/json
+
+{
+  "displayName": "审计运维",
+  "accountType": "OPS"
+}
+
+> {%
+    client.global.set("opsToken", response.body.data.accessToken);
+%}
+
+### 5. 查询已上架资源列表
+GET http://localhost:8080/api/v1/app/resources?page=1&pageSize=20
+Authorization: Bearer {{userToken}}
+
+### 6. 查询资源详情：将5替换为资源列表中的真实 resourceId
+GET http://localhost:8080/api/v1/app/resources/5
+Authorization: Bearer {{userToken}}
+
+### 7. 查询SKU库存：将5替换为资源详情中的真实 skuId
+GET http://localhost:8080/api/v1/app/resource-skus/5/availability?date=2026-07-30&timeSlot=
+Authorization: Bearer {{userToken}}
+
+### 8. 创建订单：每次创建新订单都必须使用新的 Idempotency-Key
+POST http://localhost:8080/api/v1/app/orders
+Authorization: Bearer {{userToken}}
+Idempotency-Key: shared-order-001
+Content-Type: application/json
+
+{
+  "items": [
+    {
+      "skuId": 5,
+      "quantity": 1,
+      "serviceDate": "2026-07-30",
+      "timeSlot": "",
+      "businessData": {
+        "visitors": [
+          {
+            "name": "张三",
+            "mobile": "13800138000",
+            "idType": "ID_CARD",
+            "idNo": "110101199001011234"
+          }
+        ]
+      }
+    }
+  ],
+  "remark": "模块联调订单"
+}
+
+> {%
+    client.global.set("orderId", response.body.data.id);
+%}
+
+### 9. 查询我的订单列表
+GET http://localhost:8080/api/v1/app/orders?page=1&pageSize=20
+Authorization: Bearer {{userToken}}
+
+### 10. 查询订单详情：使用第8步自动保存的 orderId
+GET http://localhost:8080/api/v1/app/orders/{{orderId}}
+Authorization: Bearer {{userToken}}
+
+### 11. 模拟支付：只允许支付未过期的待支付订单
+POST http://localhost:8080/api/v1/app/orders/{{orderId}}/mock-pay
+Authorization: Bearer {{userToken}}
+Idempotency-Key: shared-payment-001
+
+### 12. 查询已支付订单的电子票
+GET http://localhost:8080/api/v1/app/orders/{{orderId}}/tickets
+Authorization: Bearer {{userToken}}
+
+### 13. 查询订单完整时间线：包含创建、支付、退款和核销事件
+GET http://localhost:8080/api/v1/app/orders/{{orderId}}/timeline
+Authorization: Bearer {{userToken}}
+
+### 14. 用户提交退款申请：申请后等待管理员审核，订单和电子票暂不变化
+POST http://localhost:8080/api/v1/app/orders/{{orderId}}/refund-applications
+Authorization: Bearer {{userToken}}
+Idempotency-Key: shared-refund-{{$timestamp}}
+Content-Type: application/json
+
+{
+  "reason": "行程变更，申请退款"
+}
+
+> {%
+    client.global.set("refundId", response.body.data.id);
+%}
+
+### 15. 管理员查询全部订单
+GET http://localhost:8080/api/v1/admin/orders?page=1&pageSize=20
+Authorization: Bearer {{adminToken}}
+
+### 16. 管理员查询指定订单详情
+GET http://localhost:8080/api/v1/admin/orders/{{orderId}}
+Authorization: Bearer {{adminToken}}
+
+### 17. 管理员手动扫描超时未支付订单：系统每分钟也会自动扫描
+POST http://localhost:8080/api/v1/admin/orders/expire-overdue
+Authorization: Bearer {{adminToken}}
+
+### 18. 管理员下架资源：测试完成后务必执行第19步恢复上架
+PATCH http://localhost:8080/api/v1/admin/resources/5/status
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "status": "INACTIVE"
+}
+
+### 19. 管理员恢复资源上架
+PATCH http://localhost:8080/api/v1/admin/resources/5/status
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "status": "ACTIVE"
+}
+
+### 20. 管理员减少一份库存：库存记录ID不是skuId，请使用数据库中的真实 inventoryId
+POST http://localhost:8080/api/v1/admin/inventories/5/adjust
+Authorization: Bearer {{adminToken}}
+Idempotency-Key: shared-inventory-adjust-down-001
+Content-Type: application/json
+
+{
+  "delta": -1,
+  "remark": "联调测试减少库存"
+}
+
+### 21. 管理员恢复一份库存：必须使用新的 Idempotency-Key
+POST http://localhost:8080/api/v1/admin/inventories/5/adjust
+Authorization: Bearer {{adminToken}}
+Idempotency-Key: shared-inventory-adjust-up-001
+Content-Type: application/json
+
+{
+  "delta": 1,
+  "remark": "联调测试恢复库存"
+}
+
+### 22. 管理员核销电子票：将核销码替换为第12步返回的 data[0].code
+POST http://localhost:8080/api/v1/admin/verifications/consume
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "code": "请粘贴电子票核销码"
+}
+
+### 23. 运维人员查询审计日志
+GET http://localhost:8080/api/v1/ops/audit-logs?page=1&pageSize=20
+Authorization: Bearer {{opsToken}}
+
+### 24. 查询景区订单的脱敏游客信息：使用第8步自动保存的 orderId
+GET http://localhost:8080/api/v1/app/scenic/orders/{{orderId}}/visitors
+Authorization: Bearer {{userToken}}
+
+### 25. 查询文旅景区列表：自动保存第一个景区ID
+GET http://localhost:8080/api/v1/app/scenic-spots?page=1&pageSize=10
+Authorization: Bearer {{userToken}}
+
+> {%
+    client.global.set("scenicSpotId", response.body.data.items[0].id);
+%}
+
+### 26. 查询景区详情：使用第25步自动保存的景区ID
+GET http://localhost:8080/api/v1/app/scenic-spots/{{scenicSpotId}}
+Authorization: Bearer {{userToken}}
+
+### 27. 查询今天可预订的票种：自动生成今天日期并保存第一个SKU ID
+< {%
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = String(now.getMonth() + 1).padStart(2, "0");
+    const day = String(now.getDate()).padStart(2, "0");
+    const serviceDate = `${year}-${month}-${day}`;
+    request.variables.set("scenicServiceDate", serviceDate);
+    client.global.set("scenicServiceDate", serviceDate);
+%}
+GET http://localhost:8080/api/v1/app/scenic-spots/{{scenicSpotId}}/tickets?serviceDate={{scenicServiceDate}}
+Authorization: Bearer {{userToken}}
+
+> {%
+    client.global.set("scenicSkuId", response.body.data[0].skuId);
+%}
+
+### 28. 创建景区门票订单：实名游客数量必须与购票数量一致
+POST http://localhost:8080/api/v1/app/orders
+Authorization: Bearer {{userToken}}
+Idempotency-Key: scenic-order-{{$timestamp}}
+Content-Type: application/json
+
+{
+  "items": [
+    {
+      "skuId": {{scenicSkuId}},
+      "quantity": 1,
+      "serviceDate": "{{scenicServiceDate}}",
+      "timeSlot": "",
+      "businessData": {
+        "visitors": [
+          {
+            "name": "殷子聪",
+            "mobile": "13800138000",
+            "idType": "ID_CARD",
+            "idNo": "150204199001011234"
+          }
+        ]
+      }
+    }
+  ],
+  "remark": "文旅景区预订模块联调订单"
+}
+
+> {%
+    client.global.set("scenicOrderId", response.body.data.id);
+%}
+
+### 29. 模拟支付景区订单：成功后按购票数量生成电子票
+POST http://localhost:8080/api/v1/app/orders/{{scenicOrderId}}/mock-pay
+Authorization: Bearer {{userToken}}
+Idempotency-Key: scenic-payment-{{$timestamp}}
+
+### 30. 查询景区电子票
+GET http://localhost:8080/api/v1/app/orders/{{scenicOrderId}}/tickets
+Authorization: Bearer {{userToken}}
+
+### 31. 查询景区订单脱敏游客信息
+GET http://localhost:8080/api/v1/app/scenic/orders/{{scenicOrderId}}/visitors
+Authorization: Bearer {{userToken}}
+
+### 32. 管理员新增景区儿童票：票种编码自动生成，成功后保存SKU ID
+# 请先执行第3步管理员登录和第25步景区列表。
+POST http://localhost:8080/api/v1/admin/scenic-spots/{{scenicSpotId}}/tickets
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "skuCode": "SCENIC_CHILD_{{$timestamp}}",
+  "name": "儿童票（联调）",
+  "ticketType": "CHILD",
+  "priceCent": 4000,
+  "status": "ACTIVE",
+  "audienceRule": "适用于儿童游客，具体规则以运营配置为准",
+  "usageRule": "仅限预约日期和预约时段使用",
+  "refundRule": "未核销前可按平台规则申请退款",
+  "entryNotice": "请按预约时段入园",
+  "validDays": 1,
+  "maxPerOrder": 5,
+  "realNameRequired": false,
+  "idCardRequired": false
+}
+
+> {%
+    client.global.set("managedScenicSkuId", response.body.data.skuId);
+%}
+
+### 33. 管理员配置上午预约时段和限流库存
+# 已有订单时，totalQuantity不能小于已预订数量；不会覆盖已经锁定的名额。
+< {%
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = String(now.getMonth() + 1).padStart(2, "0");
+    const day = String(now.getDate()).padStart(2, "0");
+    const serviceDate = `${year}-${month}-${day}`;
+    request.variables.set("managedServiceDate", serviceDate);
+    client.global.set("managedServiceDate", serviceDate);
+%}
+PUT http://localhost:8080/api/v1/admin/scenic-tickets/{{managedScenicSkuId}}/inventories/{{managedServiceDate}}?timeSlot=09:00-12:00
+Authorization: Bearer {{adminToken}}
+Idempotency-Key: scenic-slot-{{$timestamp}}
+Content-Type: application/json
+
+{
+  "totalQuantity": 50,
+  "priceCent": 4000
+}
+
+### 34. 用户端验证新增票种和上午场库存
+GET http://localhost:8080/api/v1/app/scenic-spots/{{scenicSpotId}}/tickets?serviceDate={{managedServiceDate}}
+Authorization: Bearer {{userToken}}
+
+### 35. 管理员身份证核验入园：请先完成第28、29步，身份证号必须与下单游客一致
+POST http://localhost:8080/api/v1/admin/verifications/consume-by-id-card
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "idNo": "150204199001011234"
+}
+
+### 36. 管理员新增景区项目套票：请先执行第3、25、27和32步
+# 套票本身是独立可售SKU，价格、库存和限流均由套票自身控制。
+POST http://localhost:8080/api/v1/admin/scenic-spots/{{scenicSpotId}}/tickets
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "skuCode": "SCENIC_PACKAGE_{{$timestamp}}",
+  "name": "景区双人联票（联调）",
+  "ticketType": "PACKAGE",
+  "priceCent": 10000,
+  "status": "ACTIVE",
+  "audienceRule": "适用于双人或按组件数量分别入园的游客",
+  "usageRule": "购买后按预约日期核销套票内各项目",
+  "refundRule": "任一组件未核销前可按平台规则申请退款",
+  "entryNotice": "请分别出示套票内各项目的电子票二维码",
+  "validDays": 1,
+  "maxPerOrder": 5,
+  "realNameRequired": false,
+  "idCardRequired": false
+}
+
+> {%
+    client.global.set("packageSkuId", response.body.data.skuId);
+%}
+
+### 37. 管理员配置套票组件：至少两个普通景区票，不能嵌套套票
+# scenicSkuId 由第27步保存；managedScenicSkuId 由第32步保存。
+PUT http://localhost:8080/api/v1/admin/scenic-packages/{{packageSkuId}}/components
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "components": [
+    {
+      "skuId": {{scenicSkuId}},
+      "quantity": 1
+    },
+    {
+      "skuId": {{managedScenicSkuId}},
+      "quantity": 1
+    }
+  ]
+}
+
+### 38. 管理员设置套票当日库存与限流
+# 套票库存独立于组件库存，运营人员须按最紧缺组件的接待能力设置总量。
+PUT http://localhost:8080/api/v1/admin/scenic-tickets/{{packageSkuId}}/inventories/{{managedServiceDate}}
+Authorization: Bearer {{adminToken}}
+Idempotency-Key: scenic-package-slot-{{$timestamp}}
+Content-Type: application/json
+
+{
+  "totalQuantity": 20,
+  "priceCent": 10000
+}
+
+### 39. 用户查询已上架的项目套票详情
+GET http://localhost:8080/api/v1/app/scenic-packages/{{packageSkuId}}
+Authorization: Bearer {{userToken}}
+
+### 40. 用户创建项目套票订单：按套票SKU下单，不直接购买组件
+POST http://localhost:8080/api/v1/app/orders
+Authorization: Bearer {{userToken}}
+Idempotency-Key: scenic-package-order-{{$timestamp}}
+Content-Type: application/json
+
+{
+  "items": [
+    {
+      "skuId": {{packageSkuId}},
+      "quantity": 1,
+      "serviceDate": "{{managedServiceDate}}",
+      "timeSlot": ""
+    }
+  ],
+  "remark": "景区项目套票联调订单"
+}
+
+> {%
+    client.global.set("packageOrderId", response.body.data.id);
+%}
+
+### 41. 模拟支付项目套票：支付后按组件生成多张可独立核销的电子票
+POST http://localhost:8080/api/v1/app/orders/{{packageOrderId}}/mock-pay
+Authorization: Bearer {{userToken}}
+Idempotency-Key: scenic-package-payment-{{$timestamp}}
+
+### 42. 查询项目套票电子票：应返回每个组件各自的电子票和二维码
+GET http://localhost:8080/api/v1/app/orders/{{packageOrderId}}/tickets
+Authorization: Bearer {{userToken}}
+
+### 43. 管理员查询景区运营概览：售票按游玩日期，入园按实际核销日期
+# 请先完成第3、25、28—30和35步；金额单位为分，verificationRate为百分比。
+GET http://localhost:8080/api/v1/admin/scenic-spots/{{scenicSpotId}}/operations/summary?startDate={{managedServiceDate}}&endDate={{managedServiceDate}}
+Authorization: Bearer {{adminToken}}
+
+### 44. 管理员分页查询景区核销记录：不返回游客身份证和核销码
+GET http://localhost:8080/api/v1/admin/scenic-spots/{{scenicSpotId}}/operations/verification-records?startDate={{managedServiceDate}}&endDate={{managedServiceDate}}&page=1&pageSize=20
+Authorization: Bearer {{adminToken}}
+
+### 45. 管理员查询待审核退款申请
+GET http://localhost:8080/api/v1/admin/refund-applications?status=PENDING_REVIEW&page=1&pageSize=20
+Authorization: Bearer {{adminToken}}
+
+### 46. 管理员通过退款：订单进入REFUNDING，等待退款渠道回调
+POST http://localhost:8080/api/v1/admin/refund-applications/{{refundId}}/approve
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "comment": "电子票未核销，符合退票规则"
+}
+
+> {%
+    client.global.set("channelRefundId", response.body.data.channelRefundId);
+%}
+
+### 47. 模拟退款渠道成功回调：正式微信支付接入后由微信服务器调用并验签
+POST http://localhost:8080/api/v1/callbacks/refunds/mock
+X-Mock-Callback-Key: local-only-refund-callback
+Content-Type: application/json
+
+{
+  "channelRefundId": "{{channelRefundId}}",
+  "status": "SUCCESS",
+  "message": "模拟渠道退款成功"
+}
+
+### 48. 用户查询退款详情：状态应为SUCCESS
+GET http://localhost:8080/api/v1/app/refund-applications/{{refundId}}
+Authorization: Bearer {{userToken}}
+
+### 49. 用户查询自己的退款申请列表
+GET http://localhost:8080/api/v1/app/refund-applications?page=1&pageSize=20
+Authorization: Bearer {{userToken}}
+
+### 50. 查询退款后的完整订单时间线：应包含申请、审核、渠道成功全过程
+GET http://localhost:8080/api/v1/app/orders/{{orderId}}/timeline
+Authorization: Bearer {{userToken}}
+
+### 51. 管理员新增语音导览内容
+POST http://localhost:8080/api/v1/admin/scenic-spots/{{scenicSpotId}}/guides
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "contentType": "AUDIO",
+  "title": "兵器历史馆语音讲解（联调）",
+  "summary": "重点展品语音讲解",
+  "coverUrl": "/images/scenic/guide-audio.jpg",
+  "contentUrl": "/audio/scenic/weapon-history.mp3",
+  "contentText": "语音讲解文字稿，仅供开发联调。",
+  "durationSeconds": 180,
+  "sortOrder": 10,
+  "status": "ACTIVE"
+}
+
+> {%
+    client.global.set("scenicGuideId", response.body.data.id);
+%}
+
+### 52. 用户查询已发布的景区语音导览
+GET http://localhost:8080/api/v1/app/scenic-spots/{{scenicSpotId}}/guides?contentType=AUDIO
+Authorization: Bearer {{userToken}}
+
+### 53. 用户查询单条导览详情
+GET http://localhost:8080/api/v1/app/scenic-guides/{{scenicGuideId}}
+Authorization: Bearer {{userToken}}
+
+### 54. 管理员查询该景区全部导览内容：包含草稿和已下架内容
+GET http://localhost:8080/api/v1/admin/scenic-spots/{{scenicSpotId}}/guides
+Authorization: Bearer {{adminToken}}
+
+### 55. 已绑定且在职的员工提交内部用车申请：不支付，进入待审批状态
+# 普通社会用户会返回 403；员工建档和绑定流程见 vehicle-identity-api.http
+POST http://localhost:8080/api/v1/app/vehicle-applications
+Authorization: Bearer {{userToken}}
+Idempotency-Key: vehicle-internal-{{$timestamp}}
+Content-Type: application/json
+
+{
+  "startAt": "2026-08-10T08:30:00",
+  "endAt": "2026-08-10T17:30:00",
+  "departure": "i某小程序集团办公楼",
+  "destination": "示例景区",
+  "passengerCount": 5,
+  "estimatedKm": 60,
+  "purpose": "景区运营现场协调"
+}
+
+> {% client.global.set("vehicleApplicationId", response.body.data.id); %}
+
+### 56. 管理员查询待审批的内部用车申请
+GET http://localhost:8080/api/v1/admin/vehicle-applications?status=PENDING_APPROVAL
+Authorization: Bearer {{adminToken}}
+
+### 57. 管理员通过用车申请
+POST http://localhost:8080/api/v1/admin/vehicle-applications/{{vehicleApplicationId}}/review
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "approved": true,
+  "comment": "用车安排合理，同意派车"
+}
+
+### 58. 查询可派遣车辆：自动保存第一辆车辆ID
+GET http://localhost:8080/api/v1/admin/vehicles?status=AVAILABLE
+Authorization: Bearer {{adminToken}}
+
+> {% client.global.set("vehicleId", response.body.data[0].id); %}
+
+### 59. 查询可派遣司机：自动保存第一名司机ID；不返回敏感信息
+GET http://localhost:8080/api/v1/admin/vehicle-drivers?status=AVAILABLE
+Authorization: Bearer {{adminToken}}
+
+> {% client.global.set("driverId", response.body.data[0].id); %}
+
+### 60. 管理员派车：系统校验车辆时段冲突、车辆座位数和司机状态
+POST http://localhost:8080/api/v1/admin/vehicle-applications/{{vehicleApplicationId}}/dispatch
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "vehicleId": {{vehicleId}},
+  "driverId": {{driverId}}
+}
+
+> {% client.global.set("dispatchId", response.body.data.dispatchId); %}
+
+### 61. 管理员代操作司机接单：仅用于管理端应急处理
+# 正常履约应使用 /api/v1/app/driver/tasks/{dispatchId}/accept
+POST http://localhost:8080/api/v1/admin/vehicle-dispatches/{{dispatchId}}/accept
+Authorization: Bearer {{adminToken}}
+
+### 62. 司机出车
+POST http://localhost:8080/api/v1/admin/vehicle-dispatches/{{dispatchId}}/depart
+Authorization: Bearer {{adminToken}}
+
+### 63. 完成行程：车辆和司机恢复为可用状态，并写入里程与油耗日志
+POST http://localhost:8080/api/v1/admin/vehicle-dispatches/{{dispatchId}}/complete
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "endMileageKm": 12920.5,
+  "fuelLiter": 8.3,
+  "remark": "已安全返回，车辆状况正常"
+}
+
+### 64. 用户查询自己的内部用车申请及当前状态
+GET http://localhost:8080/api/v1/app/vehicle-applications/{{vehicleApplicationId}}
+Authorization: Bearer {{userToken}}
+
+### 65. 查询社会租赁车型：自动保存第一个车型ID
+GET http://localhost:8080/api/v1/app/vehicle-rentals/models
+Authorization: Bearer {{userToken}}
+
+> {% client.global.set("rentalModelId", response.body.data[0].modelId); %}
+
+### 66. 查询社会租赁报价：返回可用车辆数、租金、押金和应付总额
+GET http://localhost:8080/api/v1/app/vehicle-rentals/quote?modelId={{rentalModelId}}&rentalMode=HALF_DAY&startAt=2026-08-15T08:00:00&endAt=2026-08-15T12:00:00&passengerCount=3&estimatedKm=80
+Authorization: Bearer {{userToken}}
+
+### 67. 创建社会租赁待支付订单
+POST http://localhost:8080/api/v1/app/vehicle-rentals
+Authorization: Bearer {{userToken}}
+Idempotency-Key: vehicle-rental-{{$timestamp}}
+Content-Type: application/json
+
+{
+  "modelId": {{rentalModelId}},
+  "rentalMode": "HALF_DAY",
+  "startAt": "2026-08-15T08:00:00",
+  "endAt": "2026-08-15T12:00:00",
+  "departure": "包头市区",
+  "destination": "示例景区",
+  "passengerCount": 3,
+  "estimatedKm": 80,
+  "remark": "社会租赁联调订单"
+}
+
+> {% client.global.set("vehicleRentalOrderId", response.body.data.orderId); %}
+
+### 68. 查询我的社会租赁订单：新订单状态应为 PENDING_PAYMENT
+GET http://localhost:8080/api/v1/app/vehicle-rentals
+Authorization: Bearer {{userToken}}
+
+### 69. 模拟支付社会租赁订单：支付金额包含租金和押金
+POST http://localhost:8080/api/v1/app/orders/{{vehicleRentalOrderId}}/mock-pay
+Authorization: Bearer {{userToken}}
+Idempotency-Key: vehicle-rental-payment-{{$timestamp}}
+
+### 70. 管理员查询本次社会租赁车型的可派车辆
+GET http://localhost:8080/api/v1/admin/vehicles?status=AVAILABLE&modelId={{rentalModelId}}
+Authorization: Bearer {{adminToken}}
+
+> {% client.global.set("rentalVehicleId", response.body.data[0].id); %}
+
+### 71. 管理员查询可派司机
+GET http://localhost:8080/api/v1/admin/vehicle-drivers?status=AVAILABLE
+Authorization: Bearer {{adminToken}}
+
+> {% client.global.set("rentalDriverId", response.body.data[0].id); %}
+
+### 72. 为已支付的社会租赁订单派车：仅可选择同车型车辆
+POST http://localhost:8080/api/v1/admin/vehicle-rentals/{{vehicleRentalOrderId}}/dispatch
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "vehicleId": {{rentalVehicleId}},
+  "driverId": {{rentalDriverId}}
+}
+
+> {% client.global.set("rentalDispatchId", response.body.data.dispatchId); %}
+
+### 73. 社会租赁司机接单
+POST http://localhost:8080/api/v1/admin/vehicle-rental-dispatches/{{rentalDispatchId}}/accept
+Authorization: Bearer {{adminToken}}
+
+### 74. 社会租赁车辆出发
+POST http://localhost:8080/api/v1/admin/vehicle-rental-dispatches/{{rentalDispatchId}}/depart
+Authorization: Bearer {{adminToken}}
+
+### 75. 社会租赁车辆位置上报：正式接入GPS后由设备平台调用，目前用于人工联调
+POST http://localhost:8080/api/v1/admin/vehicle-dispatches/{{rentalDispatchId}}/locations
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "longitude": 109.8403,
+  "latitude": 40.6574,
+  "mileageKm": 13035.5,
+  "eventAt": "2026-08-15T10:20:00",
+  "remark": "车辆行驶至示例景区附近"
+}
+
+### 76. 查询社会租赁行程轨迹和状态日志
+GET http://localhost:8080/api/v1/admin/vehicle-dispatches/{{rentalDispatchId}}/trip-logs
+Authorization: Bearer {{adminToken}}
+
+### 77. 社会租赁还车结算：计算超时费、超公里费、押金抵扣、押金退款和待补款金额
+POST http://localhost:8080/api/v1/admin/vehicle-rental-dispatches/{{rentalDispatchId}}/return
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "returnedAt": "2026-08-15T14:30:00",
+  "endMileageKm": 13100.0,
+  "fuelLiter": 10.5,
+  "condition": "客户已还车，车况正常",
+  "photoUrls": [
+    "/images/vehicle-handover/front.jpg",
+    "/images/vehicle-handover/mileage.jpg"
+  ]
+}
+
+### 78. 用户查看本次租赁的结算、押金抵扣与退款结果
+GET http://localhost:8080/api/v1/app/vehicle-rentals/{{vehicleRentalOrderId}}/settlement
+Authorization: Bearer {{userToken}}
+
+### 80. 管理员查询全部社会租赁订单；可将状态改为 PAID、IN_SERVICE 或 COMPLETED
+GET http://localhost:8080/api/v1/admin/vehicle-rentals
+Authorization: Bearer {{adminToken}}
+
+### 81. 查询车辆运营统计报表
+GET http://localhost:8080/api/v1/admin/vehicle-reports/overview?startDate=2026-08-01&endDate=2026-08-31
+Authorization: Bearer {{adminToken}}
+
+### 82. 导出车辆运营CSV报表：IDEA会将响应保存为CSV内容
+GET http://localhost:8080/api/v1/admin/vehicle-reports/export?startDate=2026-08-01&endDate=2026-08-31
+Authorization: Bearer {{adminToken}}
+
+### 83. 打开可打印的车辆运营报表：响应为HTML，可在浏览器中打印为PDF
+GET http://localhost:8080/api/v1/admin/vehicle-reports/print?startDate=2026-08-01&endDate=2026-08-31
+Authorization: Bearer {{adminToken}}
+
+### 84. 管理员新增社会租赁车型：车型编码创建后不可修改
+POST http://localhost:8080/api/v1/admin/vehicle-models
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "modelCode": "EV_BUS_{{$timestamp}}",
+  "name": "新能源商务车",
+  "seatCount": 7,
+  "fuelType": "ELECTRIC",
+  "status": "ACTIVE"
+}
+
+> {% client.global.set("newVehicleModelId", response.body.data.id); %}
+
+### 85. 为新车型配置租赁价格：完成后车型会自动出现在用户端车型列表
+PUT http://localhost:8080/api/v1/admin/vehicle-models/{{newVehicleModelId}}/tariff
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "halfDayCent": 36000,
+  "fullDayCent": 60000,
+  "monthCent": 880000,
+  "bareMonthCent": 680000,
+  "overtimeCentPerHour": 8000,
+  "overDistanceCentPerKm": 300,
+  "enabled": true
+}
+
+### 86. 管理员新增一辆实体车辆：configuration必须是合法的JSON字符串
+POST http://localhost:8080/api/v1/admin/vehicles
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "modelId": {{newVehicleModelId}},
+  "vehicleNo": "EV-{{$timestamp}}",
+  "plateNo": "蒙A{{$timestamp}}",
+  "imageUrl": "/images/vehicles/ev-business.jpg",
+  "configuration": "{\"color\":\"白色\",\"gps\":true,\"airConditioner\":true}",
+  "status": "AVAILABLE",
+  "mileageKm": 0
+}
+
+> {% client.global.set("newVehicleId", response.body.data.id); %}
+
+### 87. 管理员新增司机：姓名、手机号和驾驶证号会加密保存
+POST http://localhost:8080/api/v1/admin/vehicle-drivers
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "driverNo": "DRIVER-{{$timestamp}}",
+  "name": "联调司机",
+  "mobile": "13800138000",
+  "licenseNo": "LICENSE-{{$timestamp}}",
+  "status": "AVAILABLE"
+}
+
+### 88. 设置车辆不可租时段：用于维修、保养、年检和人工锁车
+POST http://localhost:8080/api/v1/admin/vehicles/{{newVehicleId}}/unavailable-periods
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "startAt": "2026-09-10T08:00:00",
+  "endAt": "2026-09-10T18:00:00",
+  "reason": "计划保养"
+}
+
+> {% client.global.set("unavailablePeriodId", response.body.data.id); %}
+
+### 89. 查询该车辆全部不可租时段
+GET http://localhost:8080/api/v1/admin/vehicles/{{newVehicleId}}/unavailable-periods
+Authorization: Bearer {{adminToken}}
+
+### 90. 取消不可租时段
+PATCH http://localhost:8080/api/v1/admin/vehicle-unavailable-periods/{{unavailablePeriodId}}/cancel
+Authorization: Bearer {{adminToken}}
+
+### 91. 用户查看指定车型的车辆图片、配置、状态和里程
+GET http://localhost:8080/api/v1/app/vehicle-rentals/models/{{newVehicleModelId}}/vehicles
+Authorization: Bearer {{userToken}}
+
+###
+
+# curl -X POST http://localhost:8080/api/wx/login
+#  -H "Content-Type: application/json"
+#  -d '{"code":"你的code"}'
+$body='{ "code":"invalid-test-code", "displayName":"测试用户" }'
+Invoke-RestMethod `
+  -Method Post `
+  -Uri 'http://127.0.0.1:8080/api/v1/app/auth/wechat-login' `
+  -ContentType 'application/json' `
+  -Body $body
+
+###

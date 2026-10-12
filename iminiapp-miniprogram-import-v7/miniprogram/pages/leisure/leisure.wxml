@@ -1,0 +1,170 @@
+<view class="leisure-page">
+  <view class="leisure-nav" style="height:{{navHeight}}px;padding-top:{{statusBarHeight}}px">
+    <button class="nav-back" bindtap="backHome" aria-label="返回首页"><text>‹</text><text>首页</text></button>
+    <text class="nav-title">休闲场馆</text>
+    <button class="nav-share" style="right:{{shareRight}}px" bindtap="openSharePanel" aria-label="分享休闲场馆">↗</button>
+  </view>
+  <view wx:if="{{sharePanelVisible}}" class="share-channel-mask" bindtap="closeSharePanel" catchtouchmove="preventShareTap"><view class="share-channel-panel" catchtap="preventShareTap"><view class="share-channel-head"><view><text>分享到</text><text>使用微信原生分享</text></view><button bindtap="closeSharePanel">×</button></view><view class="share-channel-options"><button open-type="share" bindtap="closeSharePanel"><view class="share-channel-icon wechat-channel">微</view><view><text>微信好友</text><text>使用微信原生分享</text></view><text>›</text></button></view></view></view>
+
+  <view class="page leisure-content" style="padding-top:{{contentTop}}px">
+    <view class="leisure-hero">
+      <text class="hero-en">IMINIAPP LEISURE</text>
+      <text class="hero-title">休闲场馆</text>
+      <text class="hero-desc">i某小程序专属休闲场地，浴都、体育馆线上购票，便捷入场，丰富i某小程序休闲体验。</text>
+      <view class="hero-decoration"><text>浴</text><view></view><text>体</text></view>
+    </view>
+
+    <view class="leisure-intro card">
+      <view class="intro-icon">闲</view>
+      <view><text>放松与运动，一站选择</text><text>线上购票 · 电子票核销 · 订单随时查看</text></view>
+    </view>
+
+    <view class="ticket-section-head">
+      <view><text class="section-title">门票购买</text><text>浴都与体育馆均可线上购票</text></view>
+      <text>共 {{tickets.length}} 类</text>
+    </view>
+
+    <view class="date-section">
+      <view class="section-head">
+        <view><text class="section-title">选择入场日期</text><text>可选择未来 7 天</text></view>
+        <text>当日有效</text>
+      </view>
+      <scroll-view class="date-scroll" scroll-x show-scrollbar="{{false}}">
+        <button
+          wx:for="{{dates}}"
+          wx:key="value"
+          class="date-chip {{activeDate===item.value?'date-active':''}}"
+          data-date="{{item.value}}"
+          bindtap="selectDate"
+        ><text>{{item.week}}</text><text>{{item.day}}</text></button>
+      </scroll-view>
+    </view>
+
+    <block wx:for="{{tickets}}" wx:key="id">
+      <view class="ticket-detail">
+        <view
+          class="venue-visual {{item.theme}}"
+          data-src="{{item.image}}"
+          bindtap="previewVenue"
+          aria-label="点击预览{{item.name}}照片"
+        >
+          <image src="{{item.image}}" mode="aspectFill" alt="{{item.imageAlt}}"/>
+          <view class="venue-visual-copy">
+            <text>{{item.name}}</text>
+            <text>{{item.venueCode==='IMINIAPP_BATH'?'基础洗浴 · 轻松休闲':'篮球 · 羽毛球 · 分时入场'}}</text>
+          </view>
+          <text class="visual-preview">点击查看大图</text>
+        </view>
+
+        <view class="ticket-card card">
+          <view class="ticket-title-row">
+            <view><text>{{item.name}}</text><text>{{item.audience}}</text></view>
+            <view><text>¥</text><b>{{item.price}}</b><text>{{item.unit}}</text></view>
+          </view>
+          <text class="ticket-description">{{item.description}}</text>
+          <view class="rule-tags">
+            <text wx:for="{{item.rules}}" wx:key="*this">{{item}}</text>
+          </view>
+          <view class="slot-list">
+            <view wx:for="{{item.slots}}" wx:key="*this"><text>{{index+1}}</text><text>{{item}}</text></view>
+          </view>
+          <view class="ticket-notice"><text>购票提示</text><text>{{item.notice}}</text></view>
+          <button class="buy-button" disabled="{{!item.slots.length}}" data-id="{{item.id}}" bindtap="openOrder">{{item.slots.length?'选择时段并预订':'当日暂无可订时段'}}</button>
+        </view>
+        <view class="venue-map-card card">
+          <view><view><text>{{item.shortName}}地图</text><text>{{item.location.address}}</text></view><button data-code="{{item.venueCode}}" bindtap="navigateToVenue">一键导航</button></view>
+          <map wx:if="{{item.location.configured}}" class="venue-map" latitude="{{item.location.latitude}}" longitude="{{item.location.longitude}}" markers="{{item.locationMarkers}}" scale="16"></map>
+          <view wx:else class="venue-map-pending"><text>位置待配置</text><text>公司确认 GCJ-02 坐标后自动启用</text></view>
+        </view>
+      </view>
+    </block>
+
+    <view class="purchase-flow">
+      <view class="section-head"><view><text class="section-title">线上购票流程</text><text>支付完成后生成电子门票</text></view><text>5 步完成</text></view>
+      <view class="flow-list">
+        <view><text>1</text><text>选择日期</text></view>
+        <view><text>2</text><text>选择时段</text></view>
+        <view><text>3</text><text>填写数量</text></view>
+        <view><text>4</text><text>线上支付</text></view>
+        <view><text>5</text><text>扫码入场</text></view>
+      </view>
+    </view>
+
+    <view class="refund-rule card">
+      <text>退票与入场规则</text>
+      <text>• 入场前可申请退票，电子票核销入场后不可退款。</text>
+      <text>• 两类门票均为当日有效、单次入场，请按所选日期及体育馆时段使用。</text>
+      <text>• 购票成功后可前往“我的—订单”查看电子票和核销码。</text>
+    </view>
+  </view>
+
+  <view
+    class="venue-preview"
+    wx:if="{{venuePreviewVisible}}"
+    bindtap="closeVenuePreview"
+    catchtouchmove="stopTap"
+  >
+    <view class="venue-preview-panel" catchtap="stopTap">
+      <view class="venue-preview-head">
+        <text>{{venuePreviewTitle}} · 图片预览</text>
+        <button bindtap="closeVenuePreview" aria-label="关闭图片预览">×</button>
+      </view>
+      <image class="venue-preview-main" src="{{venuePreviewCurrent}}" mode="aspectFit"/>
+      <view class="venue-preview-strip">
+        <image
+          wx:for="{{tickets}}"
+          wx:key="id"
+          class="venue-preview-thumb {{venuePreviewCurrent===item.image?'venue-preview-thumb-active':''}}"
+          src="{{item.image}}"
+          mode="aspectFill"
+          data-src="{{item.image}}"
+          data-title="{{item.name}}"
+          bindtap="switchVenuePreview"
+        />
+      </view>
+      <text class="venue-preview-hint">点击缩略图切换场馆，点击背景关闭</text>
+    </view>
+  </view>
+
+  <view class="sheet-mask" wx:if="{{orderVisible}}" bindtap="closeOrder">
+    <view class="order-sheet" catchtap="stopTap">
+      <view class="sheet-head">
+        <view><text>购买{{selectedTicket.name}}</text><text>{{activeDate}} · {{selectedTicket.audience}}</text></view>
+        <button bindtap="closeOrder">×</button>
+      </view>
+      <picker
+        wx:if="{{selectedTicket.slots.length>1}}"
+        mode="selector"
+        range="{{selectedTicket.slots}}"
+        value="{{slotIndex}}"
+        bindchange="slotChange"
+      ><view class="sheet-row"><text>入场时段</text><text>{{selectedTicket.slots[slotIndex]}} ›</text></view></picker>
+      <view class="sheet-row">
+        <text>预订数量</text>
+        <view class="quantity-stepper"><view><b>1</b><text>个时段</text></view></view>
+      </view>
+      <view class="buyer-form">
+        <input placeholder="入场人姓名" value="{{buyerName}}" data-field="buyerName" bindinput="fieldInput"/>
+        <input type="number" maxlength="11" placeholder="手机号码" value="{{buyerPhone}}" data-field="buyerPhone" bindinput="fieldInput"/>
+      </view>
+      <view class="sheet-summary">
+        <view><text>当前时段价格</text><text>{{selectedTicket.slots[slotIndex]}}</text></view>
+        <view class="member-purchase-note"><text>{{memberBenefit.level}}</text><text>价格与可订状态由后端实时确认</text></view>
+        <text>提交后生成真实待支付订单并锁定该场馆时段。</text>
+      </view>
+      <button class="submit-button" loading="{{submitting}}" disabled="{{submitting}}" bindtap="submitOrder">{{submitting?'提交中':'提交场馆预订'}}</button>
+    </view>
+  </view>
+
+  <view class="result-mask" wx:if="{{resultVisible}}">
+    <view class="result-card">
+      <text class="result-check">✓</text>
+      <text class="result-title">预订提交成功</text>
+      <text>订单号 {{orderResult.electronicTicketCode}}</text>
+      <text>{{orderResult.visitDate}} · {{orderResult.admissionSlot}}</text>
+      <view class="qr-placeholder"><view></view><text>{{orderResult.statusLabel}}</text></view>
+      <text class="result-hint">请前往“我的订单”完成微信支付；服务端确认支付后才会生成核销凭证。</text>
+      <view class="result-actions"><button bindtap="closeResult">完成</button><button bindtap="viewOrders">查看订单</button></view>
+    </view>
+  </view>
+</view>

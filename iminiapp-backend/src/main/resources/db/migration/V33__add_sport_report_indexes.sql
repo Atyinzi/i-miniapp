@@ -1,0 +1,5 @@
+-- 体育场馆阶段6：运营报表查询索引。
+CREATE INDEX idx_sport_booking_report_date_status ON bf_sport_booking(booking_date,status,court_id);
+CREATE INDEX idx_sport_booking_report_member_date ON bf_sport_booking(member_account_id,booking_date);
+CREATE INDEX idx_sport_verification_report_time ON bf_sport_verification_log(verified_at,booking_id);
+CREATE INDEX idx_sport_wallet_report_type_time ON bf_sport_wallet_transaction(transaction_type,created_at,order_id);

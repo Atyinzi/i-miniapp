@@ -1,0 +1,16 @@
+# 复制为 application-local.properties 后，通过 IDEA 环境变量或本机密钥配置提供真实值。
+# application-local.properties 已被根目录 .gitignore 排除，禁止提交真实密码和微信密钥。
+spring.datasource.password=${DB_PASSWORD:}
+
+# 微信 AppID 和 AppSecret 只允许由后端环境变量注入。
+app.wechat.app-id=${WECHAT_APP_ID:}
+app.wechat.app-secret=${WECHAT_APP_SECRET:}
+
+spring.data.redis.host=${REDIS_HOST:localhost}
+spring.data.redis.port=${REDIS_PORT:6379}
+spring.data.redis.password=${REDIS_PASSWORD:}
+app.auth.token-store=redis
+app.rate-limit.enabled=true
+
+spring.flyway.clean-disabled=true
+logging.level.com.iminiapp.backend=DEBUG

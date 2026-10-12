@@ -1,0 +1,231 @@
+<view class="venues-page">
+  <view class="venue-nav" style="height:{{navHeight}}px;padding-top:{{statusBarHeight}}px">
+    <button class="venue-nav-back" bindtap="backHome" aria-label="返回首页">
+      <text class="venue-back-arrow">‹</text>
+      <text>首页</text>
+    </button>
+    <text class="venue-nav-title">{{venueName}}</text>
+    <button
+      class="venue-nav-share"
+      style="right:{{shareRight}}px"
+      bindtap="openSharePanel"
+      aria-label="分享{{venueName}}"
+    >↗</button>
+  </view>
+
+  <view class="page venue-content" style="padding-top:{{contentTop}}px">
+    <view class="venue-hero {{isHoushan?'venue-hero-houshan':''}}">
+      <image
+        wx:if="{{isHoushan}}"
+        class="houshan-hero-image"
+        src="{{houshanImage}}"
+        mode="aspectFill"
+        catchtap="previewHoushanImage"
+        aria-label="点击预览后山住宿图片"
+      />
+      <view class="hero-label">{{heroLabel}}</view>
+      <view class="venue-title">{{venueName}}</view>
+      <view class="venue-desc">{{heroDescription}}</view>
+      <text class="houshan-photo-note" wx:if="{{isHoushan}}" catchtap="previewHoushanImage">点击查看大图</text>
+    </view>
+    <view class="intro card">
+      <view class="intro-icon">⌂</view>
+      <view>
+        <view class="intro-title">{{introTitle}}</view>
+        <view class="intro-text">{{introDescription}}</view>
+        <view class="stars" wx:if="{{!isHoushan}}">★★★★★ <text>4.9 分</text></view>
+        <view class="houshan-service-tags" wx:else><text>静谧舒适</text><text>便捷高效</text></view>
+      </view>
+    </view>
+
+    <view class="meeting-section">
+      <view class="meeting-heading">
+        <view>
+          <text class="section-title">会议展示</text>
+          <text class="meeting-subtitle">按参会人数快速选择合适场地</text>
+        </view>
+        <view class="meeting-heading-icon">会</view>
+      </view>
+      <scroll-view class="meeting-filters" scroll-x enable-flex enhanced show-scrollbar="{{false}}">
+        <button
+          class="meeting-filter {{activeMeetingFilter === index ? 'meeting-filter-active' : ''}}"
+          wx:for="{{meetingFilters}}"
+          wx:key="label"
+          data-index="{{index}}"
+          bindtap="changeMeetingFilter"
+        >{{item.label}}</button>
+      </scroll-view>
+      <view class="meeting-list">
+        <view
+          class="meeting-card card"
+          wx:for="{{visibleMeetings}}"
+          wx:for-index="meetingIndex"
+          wx:key="name"
+          data-index="{{meetingIndex}}"
+          bindtap="openMeeting"
+          hover-class="meeting-card-active"
+        >
+          <view
+            class="meeting-gallery"
+            data-index="{{meetingIndex}}"
+            catchtap="previewMeetingImages"
+            aria-label="查看{{item.name}}多张图片"
+          >
+            <image class="meeting-photo" src="{{item.images[0]}}" mode="aspectFill"/>
+            <view class="meeting-photo-count">▣ {{item.images.length}} 张</view>
+            <view class="meeting-thumbnails">
+              <image
+                wx:for="{{item.images}}"
+                wx:for-item="photo"
+                wx:key="*this"
+                class="meeting-thumbnail"
+                src="{{photo}}"
+                mode="aspectFill"
+                data-index="{{meetingIndex}}"
+                data-url="{{photo}}"
+                catchtap="previewMeetingImages"
+              />
+            </view>
+          </view>
+          <view class="meeting-info">
+            <view class="meeting-name-row">
+              <text class="meeting-name">{{item.name}}</text>
+              <text class="meeting-capacity">可容纳 {{item.capacity}} 人</text>
+            </view>
+            <text class="meeting-equipment">{{item.equipment}}</text>
+            <view class="meeting-meta">
+              <view>
+                <text class="meeting-price">{{item.price}}</text>
+                <text class="meeting-time">{{item.time}}</text>
+              </view>
+              <text class="meeting-more" data-index="{{meetingIndex}}" catchtap="openMeeting">查看详情 ›</text>
+            </view>
+          </view>
+        </view>
+      </view>
+      <view class="meeting-empty" wx:if="{{!visibleMeetings.length}}">会议室信息待后台发布</view>
+    </view>
+
+    <view class="filter card">
+      <picker
+        mode="date"
+        value="{{checkInDate}}"
+        start="{{minDate}}"
+        bindchange="checkInDateChange"
+      >
+        <view class="date-picker">
+          <text class="filter-date">{{checkInLabel}}</text>
+          <text>入住日期 · 点击筛选</text>
+        </view>
+      </picker>
+      <text class="dash">—</text>
+      <picker
+        mode="date"
+        value="{{checkOutDate}}"
+        start="{{checkOutMin}}"
+        bindchange="checkOutDateChange"
+      >
+        <view class="date-picker">
+          <text class="filter-date">{{checkOutLabel}}</text>
+          <text>离店日期 · 点击筛选</text>
+        </view>
+      </picker>
+      <view class="nights">筛选可订房型 ›</view>
+    </view>
+    <view class="heading"><text class="section-title">房型信息</text><text wx:if="{{rooms.length}}">共 {{rooms.length}} 种房型</text></view>
+    <view class="meeting-empty" wx:if="{{roomsLoading}}">正在读取房型与库存…</view>
+    <view class="meeting-empty" wx:elif="{{roomsError}}">{{roomsError}}</view>
+    <view class="room card" wx:for="{{rooms}}" wx:for-index="roomIndex" wx:key="name">
+      <view class="room-gallery" data-index="{{roomIndex}}" catchtap="previewRoomImages">
+        <image class="room-photo" src="{{item.images[0]}}" mode="aspectFill"/>
+        <view class="room-status">{{item.status}}</view>
+        <view class="room-photo-count">▣ {{item.images.length}} 张</view>
+      </view>
+      <view class="room-booking-body">
+        <view class="room-info">
+          <view class="room-name">{{item.name}}</view>
+          <view class="room-detail">{{item.bed}} · {{item.size}}㎡ · 含双早</view>
+          <view class="room-remaining">可订状态：{{item.status}} · 剩余 {{item.remaining}} 间</view>
+          <view><text class="price">¥{{item.price}}</text><text class="unit"> /晚起</text></view>
+        </view>
+        <button class="book-mini" data-index="{{roomIndex}}" bindtap="bookRoom">预订</button>
+      </view>
+    </view>
+    <view class="tips"><text>✓ 免费停车</text><text>✓ 24小时服务</text><text>✓ 高速 Wi-Fi</text></view>
+
+    <view class="dining-section">
+      <view class="dining-heading">
+        <view>
+          <text class="section-title">{{isHoushan?'后山住宿餐饮':'宾馆餐饮'}}</text>
+          <text class="dining-subtitle">{{isHoushan?'雅间预订服务':'雅间预订与场内配送服务'}}</text>
+        </view>
+        <view class="dining-heading-icon">膳</view>
+      </view>
+      <view class="dining-entry-list">
+        <view class="dining-entry dining-entry-reserve card" bindtap="openDiningReservation" hover-class="dining-entry-active">
+          <view class="dining-entry-icon">雅</view>
+          <view class="dining-entry-content">
+            <view class="dining-entry-title">餐饮预订</view>
+            <view class="dining-entry-desc">按人数筛选雅间 · 提前选购餐品</view>
+            <view class="dining-entry-tags">
+              <text>4人桌</text><text>6人桌</text><text>10人桌以上</text>
+            </view>
+          </view>
+          <text class="dining-entry-arrow">›</text>
+        </view>
+        <view wx:if="{{!isHoushan}}" class="dining-entry dining-entry-delivery card" bindtap="openDiningDelivery" hover-class="dining-entry-active">
+          <view class="dining-entry-icon">送</view>
+          <view class="dining-entry-content">
+            <view class="dining-entry-title-row">
+              <text class="dining-entry-title">餐饮配送</text>
+              <text class="dining-scope-tag">仅限场内</text>
+            </view>
+            <view class="dining-entry-desc">送至会议室或宾馆客房 · 配送费 ¥5</view>
+            <view class="dining-entry-note">支持查看配送进度</view>
+          </view>
+          <text class="dining-entry-arrow">›</text>
+        </view>
+      </view>
+    </view>
+  </view>
+
+  <view wx:if="{{sharePanelVisible}}" class="share-channel-mask" bindtap="closeSharePanel" catchtouchmove="preventShareTap">
+    <view class="share-channel-panel" catchtap="preventShareTap">
+      <view class="share-channel-head"><view><text>分享到</text><text>使用微信原生分享</text></view><button bindtap="closeSharePanel">×</button></view>
+      <view class="share-channel-options">
+        <button open-type="share" bindtap="closeSharePanel"><view class="share-channel-icon wechat-channel">微</view><view><text>微信好友</text><text>使用微信原生分享</text></view><text>›</text></button>
+      </view>
+    </view>
+  </view>
+
+  <view
+    class="meeting-preview"
+    wx:if="{{meetingPreviewVisible}}"
+    catchtouchmove="preventTap"
+    bindtap="closeMeetingPreview"
+  >
+    <view class="meeting-preview-panel" catchtap="preventTap">
+      <view class="meeting-preview-header">
+        <text class="meeting-preview-title">{{meetingPreviewTitle}} · 图片预览</text>
+        <button class="meeting-preview-close" bindtap="closeMeetingPreview" aria-label="关闭图片预览">×</button>
+      </view>
+      <image
+        class="meeting-preview-main"
+        src="{{meetingPreviewCurrent}}"
+        mode="aspectFit"
+      />
+      <scroll-view class="meeting-preview-strip" scroll-x show-scrollbar="{{false}}">
+        <image
+          wx:for="{{meetingPreviewImages}}"
+          wx:key="*this"
+          class="meeting-preview-thumb {{meetingPreviewCurrent === item ? 'meeting-preview-thumb-active' : ''}}"
+          src="{{item}}"
+          mode="aspectFill"
+          data-url="{{item}}"
+          bindtap="switchMeetingPreview"
+        />
+      </scroll-view>
+      <text class="meeting-preview-hint">点击下方小图切换，点击背景关闭</text>
+    </view>
+  </view>
+</view>

@@ -1,0 +1,107 @@
+### 住宿第一阶段接口联调（依次执行）
+
+### 管理员登录
+# @name adminLogin
+POST http://localhost:8080/api/v1/app/auth/mock-login
+Content-Type: application/json
+
+{
+  "displayName": "住宿管理员",
+  "accountType": "ADMIN"
+}
+
+### 创建酒店
+# @name createHotel
+POST http://localhost:8080/api/v1/admin/hotels
+Authorization: Bearer {{adminLogin.response.body.$.data.accessToken}}
+Content-Type: application/json
+
+{
+  "hotelCode": "BZ_HOTEL",
+  "name": "i某小程序宾馆",
+  "address": "内蒙古自治区包头市青山区",
+  "contactPhone": "0472-1234567",
+  "description": "i某小程序旗下酒店",
+  "checkInTime": "14:00:00",
+  "checkOutTime": "12:00:00",
+  "status": "ACTIVE",
+  "images": [
+    {"imageUrl": "https://example.com/hotel-cover.jpg", "imageType": "COVER", "sortOrder": 0, "enabled": true}
+  ]
+}
+
+### 创建房型（hotelId 替换为上一步返回值）
+# @name createRoomType
+POST http://localhost:8080/api/v1/admin/hotels/room-types
+Authorization: Bearer {{adminLogin.response.body.$.data.accessToken}}
+Content-Type: application/json
+
+{
+  "hotelId": 1,
+  "typeCode": "DELUXE_TWIN",
+  "name": "豪华双床房",
+  "bedType": "1.2米双床",
+  "areaSqm": 36.5,
+  "maxGuests": 2,
+  "totalRooms": 20,
+  "lowStockThreshold": 3,
+  "basePriceCent": 38800,
+  "description": "含双早，可免费停车",
+  "coverUrl": "https://example.com/twin-cover.jpg",
+  "status": "ACTIVE",
+  "facilities": [
+    {"facilityCode": "WIFI", "name": "无线网络", "sortOrder": 1},
+    {"facilityCode": "BREAKFAST", "name": "双人早餐", "sortOrder": 2}
+  ],
+  "images": [
+    {"imageUrl": "https://example.com/twin-1.jpg", "imageType": "GALLERY", "sortOrder": 1, "enabled": true}
+  ]
+}
+
+### 创建国庆价格规则（roomTypeId 替换为房型返回值）
+POST http://localhost:8080/api/v1/admin/hotels/price-rules
+Authorization: Bearer {{adminLogin.response.body.$.data.accessToken}}
+Content-Type: application/json
+
+{
+  "roomTypeId": 1,
+  "ruleCode": "NATIONAL_DAY_2026",
+  "name": "2026国庆价格",
+  "ruleType": "HOLIDAY",
+  "startDate": "2026-10-01",
+  "endDate": "2026-10-07",
+  "daysOfWeek": [],
+  "priceCent": 58800,
+  "priority": 100,
+  "status": "ACTIVE"
+}
+
+### 生成价格库存日历
+POST http://localhost:8080/api/v1/admin/hotels/inventory/calendar/generate
+Authorization: Bearer {{adminLogin.response.body.$.data.accessToken}}
+Content-Type: application/json
+
+{
+  "roomTypeId": 1,
+  "startDate": "2026-09-01",
+  "endDate": "2027-08-31",
+  "totalQuantity": 20
+}
+
+### 用户登录
+# @name userLogin
+POST http://localhost:8080/api/v1/app/auth/mock-login
+Content-Type: application/json
+
+{
+  "displayName": "住宿预订用户",
+  "accountType": "USER"
+}
+
+### 酒店列表
+GET http://localhost:8080/api/v1/app/hotels
+Authorization: Bearer {{userLogin.response.body.$.data.accessToken}}
+
+### 查询指定日期可订房型
+GET http://localhost:8080/api/v1/app/hotels/1/room-types?checkInDate=2026-10-01&checkOutDate=2026-10-04&roomCount=1
+Authorization: Bearer {{userLogin.response.body.$.data.accessToken}}

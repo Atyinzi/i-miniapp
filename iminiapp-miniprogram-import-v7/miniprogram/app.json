@@ -1,0 +1,17 @@
+{
+  "pages": ["pages/index/index", "pages/notices/notices", "pages/venues/venues", "pages/dining/dining", "pages/weapon-city/weapon-city", "pages/leisure/leisure", "pages/venue-detail/venue-detail", "pages/booking/booking", "pages/experience/experience", "pages/mall/mall", "pages/mine/mine", "pages/profile-auth/profile-auth", "pages/agreement/agreement", "pages/staff-verification/staff-verification", "pages/driver/driver", "pages/internal-vehicle/internal-vehicle"],
+  "window": { "navigationBarBackgroundColor": "#F7F3EA", "navigationBarTextStyle": "black", "navigationBarTitleText": "i某小程序", "backgroundColor": "#F7F3EA" },
+  "tabBar": { "color": "#8B8B86", "selectedColor": "#AA4A32", "backgroundColor": "#FFFDF8", "borderStyle": "white", "list": [
+    { "pagePath": "pages/index/index", "text": "首页" },
+    { "pagePath": "pages/experience/experience", "text": "游玩" },
+    { "pagePath": "pages/mall/mall", "text": "商城" },
+    { "pagePath": "pages/mine/mine", "text": "我的" }
+  ] },
+  "permission": {
+    "scope.userLocation": {
+      "desc": "用于车队地图选点、场馆导航和查看司机实时位置"
+    }
+  },
+  "requiredPrivateInfos": ["getLocation", "chooseLocation"],
+  "sitemapLocation": "sitemap.json"
+}

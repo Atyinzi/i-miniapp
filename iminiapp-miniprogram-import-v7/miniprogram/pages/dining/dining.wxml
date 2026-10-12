@@ -1,0 +1,161 @@
+<view class="dining-page">
+  <view class="hero"><text class="kicker">IMINIAPP · DINING SERVICE</text><text class="hero-title">餐饮服务</text><text class="hero-desc">汇总示例宾馆与后山住宿餐饮服务</text></view>
+  <view class="venue-summary">
+    <view class="summary-head"><view><text class="summary-title">选择用餐地点</text><text class="summary-sub">不同住宿区域提供对应餐饮服务</text></view><text class="summary-count">2处</text></view>
+    <view class="venue-options">
+      <view wx:for="{{diningVenues}}" wx:key="id" class="venue-option {{activeDiningVenue===item.id?'venue-option-active':''}}" data-area="{{item.id}}" bindtap="switchDiningVenue" hover-class="venue-option-pressed">
+        <view class="venue-option-icon venue-option-icon-{{item.id}}">{{item.icon}}</view>
+        <view class="venue-option-copy"><view><text class="venue-option-name">{{item.name}}</text><text class="venue-option-tag">{{item.tag}}</text></view><text class="venue-option-desc">{{item.desc}}</text></view>
+        <text class="venue-option-check">{{activeDiningVenue===item.id?'✓':'›'}}</text>
+      </view>
+    </view>
+    <view class="active-venue-note"><text>{{venueName}}</text><text>{{isHoushan?'当前提供餐饮预订与提前点餐':'当前提供餐饮预订、提前点餐及场内配送'}}</text></view>
+  </view>
+  <view class="tabs">
+    <button class="{{activeTab==='reservation'?'active':''}}" data-tab="reservation" bindtap="switchTab">餐饮预订</button>
+    <button wx:if="{{deliveryEnabled}}" class="{{activeTab==='delivery'?'active':''}}" data-tab="delivery" bindtap="switchTab">餐饮配送</button>
+  </view>
+
+  <view wx:if="{{activeTab==='reservation'}}" class="content">
+    <view class="head"><view><text class="title">选择雅间</text><text class="sub">按用餐人数筛选合适雅间</text></view><text class="step">01</text></view>
+    <scroll-view class="chips" scroll-x show-scrollbar="{{false}}">
+      <button wx:for="{{roomFilters}}" wx:key="*this" class="{{activeRoomFilter===item?'active':''}}" data-filter="{{item}}" bindtap="changeRoomFilter">{{item}}</button>
+    </scroll-view>
+    <view wx:for="{{visibleRooms}}" wx:key="id" class="room card {{selectedTableId===item.id?'selected':''}}" data-id="{{item.id}}" bindtap="selectRoom">
+      <view class="private-room-photo-wrap" data-name="{{item.name}}" catchtap="previewPrivateRoom">
+        <image class="private-room-photo" src="{{item.image}}" mode="aspectFill"/>
+        <text class="photo-preview-label">查看大图</text>
+      </view>
+      <view class="room-info"><view><text class="item-title">{{item.name}}</text><text class="available">可订</text></view><text>可容纳 {{item.capacity}} 人 · {{item.size}}</text><text class="facility">{{item.facilities}}</text></view>
+      <text class="check">{{selectedTableId===item.id?'✓':''}}</text>
+    </view>
+
+    <view class="head next"><view><text class="title">用餐安排</text><text class="sub">选择用餐地址、日期和到店时段</text></view><text class="step">02</text></view>
+    <view class="arrange-card card">
+      <picker class="location-picker" mode="selector" range="{{reservationAddresses}}" value="{{reservationAddressIndex}}" bindchange="reservationAddressChange">
+        <view class="arrange-row">
+          <view class="arrange-icon location-icon">址</view>
+          <view class="arrange-copy"><text class="arrange-label">用餐地址</text><text class="arrange-value">{{reservationAddresses[reservationAddressIndex]}}</text></view>
+          <text class="arrange-arrow">›</text>
+        </view>
+      </picker>
+      <view class="arrange-divider"></view>
+      <view class="time-choice-grid">
+        <picker class="time-choice" mode="date" value="{{reservationDate}}" start="{{today}}" bindchange="reservationDateChange">
+          <view class="time-choice-inner"><view class="arrange-icon date-icon">日</view><view class="arrange-copy"><text class="arrange-label">用餐日期</text><text class="time-choice-value">{{reservationDateLabel}}</text></view><text class="mini-arrow">›</text></view>
+        </picker>
+        <picker class="time-choice" mode="selector" range="{{timeSlots}}" value="{{timeSlotIndex}}" bindchange="timeSlotChange">
+          <view class="time-choice-inner"><view class="arrange-icon time-icon">时</view><view class="arrange-copy"><text class="arrange-label">用餐时段</text><text class="time-choice-value">{{timeSlots[timeSlotIndex]}}</text></view><text class="mini-arrow">›</text></view>
+        </picker>
+      </view>
+      <view class="arrange-divider"></view>
+      <input class="manual-address-input" value="{{contactName}}" bindinput="contactNameInput" placeholder="联系人姓名"/>
+      <input class="manual-address-input" type="number" maxlength="11" value="{{contactMobile}}" bindinput="contactMobileInput" placeholder="11位联系电话"/>
+    </view>
+
+    <view class="head next"><view><text class="title">提前点餐</text><text class="sub">厨师提前准备，以现场实际点餐为准</text></view><text class="step">03</text></view>
+    <scroll-view class="chips" scroll-x show-scrollbar="{{false}}">
+      <button wx:for="{{reserveCategories}}" wx:key="*this" class="{{activeReserveCategory===item?'active':''}}" data-category="{{item}}" bindtap="changeReserveCategory">{{item}}</button>
+    </scroll-view>
+    <view class="food card" wx:for="{{visibleReserveFoods}}" wx:key="id">
+      <view class="thumb {{item.tone}}">{{item.icon}}</view>
+      <view class="food-info"><text class="item-title">{{item.name}}</text><text class="food-intro">{{item.intro}}</text><text class="food-price">¥{{item.price}}</text></view>
+      <view class="qty"><button wx:if="{{item.qty}}" data-id="{{item.id}}" data-delta="-1" bindtap="adjustReserve">−</button><text wx:if="{{item.qty}}">{{item.qty}}</text><button class="add-button {{addPulseId===item.id?'add-button-pop':''}}" data-id="{{item.id}}" data-delta="1" bindtap="adjustReserve">＋</button></view>
+    </view>
+    <view class="rules"><text class="rules-title">预订费用说明</text><text>应付金额为固定预订费 ¥50 加预选餐品金额；提交后生成真实待支付订单并锁定雅间及菜品库存。</text></view>
+    <view class="spacer"></view>
+    <view wx:if="{{cartVisible}}" class="cart-mask" bindtap="closeReserveCart"></view>
+    <view wx:if="{{cartVisible}}" class="cart-panel">
+      <view class="cart-panel-head"><view><text>已选菜品</text><text>{{reserveCount}} 份 · ¥{{reserveTotal}}</text></view><button wx:if="{{reserveCount}}" bindtap="clearReserveCart">清空</button></view>
+      <scroll-view class="cart-list" scroll-y>
+        <view wx:if="{{!reserveCart.length}}" class="cart-empty">购物车还是空的，去选择喜欢的菜品吧</view>
+        <view wx:for="{{reserveCart}}" wx:key="id" class="cart-row">
+          <view class="cart-dish-icon {{item.tone}}">{{item.icon}}</view>
+          <view class="cart-dish-info"><text>{{item.name}}</text><text>¥{{item.price}} × {{item.qty}}</text></view>
+          <text class="cart-row-total">¥{{item.price * item.qty}}</text>
+          <view class="cart-qty"><button data-id="{{item.id}}" data-delta="-1" bindtap="adjustReserve">−</button><text>{{item.qty}}</text><button data-id="{{item.id}}" data-delta="1" bindtap="adjustReserve">＋</button></view>
+        </view>
+      </scroll-view>
+    </view>
+    <view wx:if="{{flyToCart}}" class="fly-dot">＋</view>
+    <view class="checkout reservation-checkout">
+      <button class="cart-button {{cartBump?'cart-button-bump':''}}" bindtap="toggleReserveCart" aria-label="查看已选菜品">
+        <image class="cart-icon" src="/assets/images/dining/cart-icon.png" mode="aspectFit"/>
+        <text wx:if="{{reserveCount}}" class="cart-badge">{{reserveCount}}</text>
+      </button>
+      <view class="checkout-summary"><text class="checkout-label">预订费 ¥50 + 餐品 ¥{{reserveTotal}}</text><text class="checkout-price">¥{{reservePayable}}</text><text>金额由后端按实时菜价确认</text></view>
+      <button class="reservation-submit" loading="{{reservationSubmitting}}" disabled="{{reservationSubmitting}}" bindtap="submitReservation"><text>{{reservationSubmitting?'提交中':'提交预订'}}</text></button>
+    </view>
+  </view>
+
+  <view wx:if="{{deliveryEnabled && activeTab==='delivery'}}" class="content">
+    <view class="scope"><text>送</text><view><text class="scope-title">仅限示例宾馆场内配送</text><text class="scope-desc">会议室、客房及宾馆公共区域</text></view></view>
+    <view class="head"><view><text class="title">配送地点</text><text class="sub">请选择或填写宾馆内详细位置</text></view><text class="step">01</text></view>
+    <view class="address address-picker-card card">
+      <picker mode="selector" range="{{addresses}}" value="{{addressIndex}}" bindchange="addressChange">
+        <view class="arrange-row"><view class="arrange-icon delivery-address-icon">址</view><view class="arrange-copy"><text class="arrange-label">配送地址</text><text class="arrange-value">{{addresses[addressIndex]}}</text></view><text class="arrange-arrow">›</text></view>
+      </picker>
+      <input class="manual-address-input" placeholder="请输入房号、会议室号或具体位置" value="{{deliveryRoom}}" bindinput="deliveryRoomInput"/>
+      <input class="manual-address-input" value="{{contactName}}" bindinput="contactNameInput" placeholder="配送联系人姓名"/>
+      <input class="manual-address-input" type="number" maxlength="11" value="{{contactMobile}}" bindinput="contactMobileInput" placeholder="配送联系电话"/>
+    </view>
+    <view class="head next"><view><text class="title">选择餐品</text><text class="sub">餐品标注预计送达时间</text></view><text class="step">02</text></view>
+    <scroll-view class="chips" scroll-x show-scrollbar="{{false}}">
+      <button wx:for="{{deliveryCategories}}" wx:key="*this" class="{{activeDeliveryCategory===item?'active':''}}" data-category="{{item}}" bindtap="changeDeliveryCategory">{{item}}</button>
+    </scroll-view>
+    <view class="food card" wx:for="{{visibleDeliveryFoods}}" wx:key="id">
+      <view class="thumb {{item.tone}}">{{item.icon}}</view>
+      <view class="food-info"><text class="item-title">{{item.name}}</text><text class="food-intro">{{item.intro}}</text><text class="delivery-time">{{item.time}}</text><text class="food-price">¥{{item.price}}</text></view>
+      <view class="qty"><button wx:if="{{item.qty}}" data-id="{{item.id}}" data-delta="-1" bindtap="adjustDelivery">−</button><text wx:if="{{item.qty}}">{{item.qty}}</text><button class="add-button {{deliveryAddPulseId===item.id?'add-button-pop':''}}" data-id="{{item.id}}" data-delta="1" bindtap="adjustDelivery">＋</button></view>
+    </view>
+    <view wx:if="{{deliveryOrderId}}" class="progress delivery-progress card">
+      <view class="progress-head-row">
+        <view><text class="progress-title">配送进度</text><text class="order-id">订单号 {{deliveryOrderId}}</text></view>
+        <view class="status-side"><text class="progress-status">{{deliveryStatus}}</text></view>
+      </view>
+      <view class="eta-row"><text>{{deliveryEta}}</text><text>更新于 {{deliveryStatusUpdatedAt}}</text></view>
+      <view class="status-timeline">
+        <view wx:for="{{deliveryProgressSteps}}" wx:key="code" class="status-step status-{{item.state}}">
+          <view class="status-rail"><text class="status-marker">{{item.state==='done'?'✓':index+1}}</text><view wx:if="{{index!==deliveryProgressSteps.length-1}}" class="status-line"></view></view>
+          <view class="status-copy"><view><text>{{item.label}}</text><text wx:if="{{item.time}}">{{item.time}}</text></view><text>{{item.description}}</text></view>
+        </view>
+      </view>
+      <view class="progress-actions">
+        <button wx:if="{{deliveryStatusCode==='PENDING_PAYMENT'}}" bindtap="cancelDelivery">取消未支付订单</button>
+      </view>
+      <text class="backend-hint">状态由支付回调、后厨接单和配送人员操作更新，本页面会自动刷新。</text>
+    </view>
+    <view class="rules"><text class="rules-title">配送说明</text><text>场内配送费固定 ¥5；配送员接单后可查看“配送中”“即将送达”等进度。</text></view>
+    <view class="spacer"></view>
+    <view wx:if="{{deliveryCartVisible}}" class="cart-mask" bindtap="closeDeliveryCart"></view>
+    <view wx:if="{{deliveryCartVisible}}" class="cart-panel">
+      <view class="cart-panel-head"><view><text>配送购物车</text><text>{{deliveryCount}} 份 · ¥{{deliverySubtotal}}</text></view><button wx:if="{{deliveryCount}}" bindtap="clearDeliveryCart">清空</button></view>
+      <scroll-view class="cart-list" scroll-y>
+        <view wx:if="{{!deliveryCart.length}}" class="cart-empty">购物车还是空的，去选择需要配送的餐品吧</view>
+        <view wx:for="{{deliveryCart}}" wx:key="id" class="cart-row">
+          <view class="cart-dish-icon {{item.tone}}">{{item.icon}}</view>
+          <view class="cart-dish-info"><text>{{item.name}}</text><text>¥{{item.price}} × {{item.qty}} · {{item.time}}</text></view>
+          <text class="cart-row-total">¥{{item.price * item.qty}}</text>
+          <view class="cart-qty"><button data-id="{{item.id}}" data-delta="-1" bindtap="adjustDelivery">−</button><text>{{item.qty}}</text><button data-id="{{item.id}}" data-delta="1" bindtap="adjustDelivery">＋</button></view>
+        </view>
+      </scroll-view>
+    </view>
+    <view wx:if="{{deliveryFlyToCart}}" class="fly-dot">＋</view>
+    <view class="checkout delivery-checkout">
+      <button class="cart-button {{deliveryCartBump?'cart-button-bump':''}}" bindtap="toggleDeliveryCart" aria-label="查看配送购物车">
+        <image class="cart-icon" src="/assets/images/dining/cart-icon.png" mode="aspectFit"/>
+        <text wx:if="{{deliveryCount}}" class="cart-badge">{{deliveryCount}}</text>
+      </button>
+      <view class="checkout-summary"><text class="checkout-label">{{memberBenefit.level}} · {{memberBenefit.discountLabel}}</text><text class="checkout-price">¥{{deliveryPayable}}</text><text>原价 ¥{{deliveryTotal}} · 已优惠 ¥{{deliveryDiscount}}</text></view>
+      <button class="delivery-submit" loading="{{deliverySubmitting}}" disabled="{{deliverySubmitting}}" bindtap="submitDelivery"><text>{{deliverySubmitting?'提交中':'提交订单'}}</text></button>
+    </view>
+  </view>
+
+  <view wx:if="{{roomPreviewVisible}}" class="room-preview" bindtap="closePrivateRoomPreview" catchtouchmove="preventPreviewTap">
+    <view class="room-preview-panel" catchtap="preventPreviewTap">
+      <view class="room-preview-head"><text>{{roomPreviewTitle}} · 图片预览</text><button bindtap="closePrivateRoomPreview">×</button></view>
+      <image class="room-preview-image" src="{{roomPreviewImage}}" mode="aspectFit"/>
+      <text class="room-preview-hint">点击背景关闭预览</text>
+    </view>
+  </view>
+</view>

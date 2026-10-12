@@ -1,0 +1,21 @@
+const assert = require('assert')
+const fs = require('fs')
+const path = require('path')
+
+const root = path.join(__dirname, '..', 'miniprogram')
+const app = JSON.parse(fs.readFileSync(path.join(root, 'app.json'), 'utf8'))
+const service = fs.readFileSync(path.join(root, 'services', 'employeeVehicleService.js'), 'utf8')
+const page = fs.readFileSync(path.join(root, 'pages', 'internal-vehicle', 'internal-vehicle.js'), 'utf8')
+const driver = fs.readFileSync(path.join(root, 'pages', 'driver', 'driver.js'), 'utf8')
+
+assert.ok(app.pages.includes('pages/internal-vehicle/internal-vehicle'), '内部用车页面必须注册到 app.json')
+assert.ok(service.includes('/api/v1/app/vehicle-employees/me'), '必须读取员工身份')
+assert.ok(service.includes('/api/v1/app/vehicle-employees/bind'), '必须支持员工自助绑定')
+assert.ok(service.includes("'Idempotency-Key'"), '内部用车创建必须携带幂等键')
+assert.ok(service.includes('/api/v1/app/vehicle-applications'), '必须调用内部用车接口')
+assert.ok(page.includes('PENDING_APPROVAL'), '小程序必须识别待审核状态')
+assert.ok(page.includes('cancelInternalVehicleApplication'), '小程序必须支持撤销待审核申请')
+assert.ok(driver.includes("INTERNAL: '内部用车'"), '司机端必须区分内部用车')
+assert.ok(driver.includes("SOCIAL_RENTAL: '社会租赁'"), '司机端必须区分社会租赁')
+
+console.log('Vehicle role integration tests passed')

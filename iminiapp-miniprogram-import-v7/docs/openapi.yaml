@@ -1,0 +1,832 @@
+openapi: 3.0.3
+info:
+  title: i某小程序产业服务平台 API
+  version: 1.0.0
+  description: 前后端联调唯一契约。所有响应均使用 code、message、data；成功业务码为 200。
+servers:
+  - url: https://dev-api.example.com
+    description: 开发环境
+  - url: https://test-api.example.com
+    description: 测试环境
+  - url: https://api.example.com
+    description: 生产环境
+security:
+  - bearerAuth: []
+tags:
+  - name: Home
+  - name: Bookings
+  - name: Dining
+  - name: Leisure
+  - name: WeaponCity
+  - name: Mall
+  - name: Orders
+  - name: Members
+paths:
+  /api/home:
+    get:
+      tags: [Home]
+      operationId: getHome
+      summary: 获取首页内容
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponseHome'
+        default:
+          $ref: '#/components/responses/ErrorResponse'
+
+  /api/bookings:
+    post:
+      tags: [Bookings]
+      operationId: createBooking
+      summary: 创建住宿或车辆预约
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateBookingRequest'
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponseBooking'
+        default:
+          $ref: '#/components/responses/ErrorResponse'
+
+  /api/bookings/{bookingId}/status:
+    parameters:
+      - $ref: '#/components/parameters/BookingId'
+    get:
+      tags: [Bookings]
+      operationId: getBookingStatus
+      summary: 查询车辆预约服务状态
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponseBooking'
+        default:
+          $ref: '#/components/responses/ErrorResponse'
+
+  /api/bookings/{bookingId}/status-transitions:
+    parameters:
+      - $ref: '#/components/parameters/BookingId'
+    post:
+      tags: [Bookings]
+      operationId: transitionBookingStatus
+      summary: 写入车辆服务状态迁移
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BookingStatusTransitionRequest'
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponseBooking'
+        default:
+          $ref: '#/components/responses/ErrorResponse'
+
+  /api/bookings/{bookingId}/cancel:
+    parameters:
+      - $ref: '#/components/parameters/BookingId'
+    post:
+      tags: [Bookings]
+      operationId: cancelBooking
+      summary: 取消车辆预约
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CancelRequest'
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponseCancellation'
+        default:
+          $ref: '#/components/responses/ErrorResponse'
+
+  /api/dining/delivery/orders:
+    post:
+      tags: [Dining]
+      operationId: createDeliveryOrder
+      summary: 创建餐饮配送订单
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateDeliveryOrderRequest'
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponseDeliveryOrder'
+        default:
+          $ref: '#/components/responses/ErrorResponse'
+
+  /api/dining/delivery/orders/{orderId}/cancel:
+    parameters:
+      - $ref: '#/components/parameters/OrderId'
+    post:
+      tags: [Dining]
+      operationId: cancelDeliveryOrder
+      summary: 取消餐饮配送订单
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CancelRequest'
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponseCancellation'
+        default:
+          $ref: '#/components/responses/ErrorResponse'
+
+  /api/leisure/ticket-orders:
+    post:
+      tags: [Leisure]
+      operationId: createLeisureTicketOrder
+      summary: 购买休闲场馆门票
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateLeisureTicketOrderRequest'
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponseTicketOrder'
+        default:
+          $ref: '#/components/responses/ErrorResponse'
+
+  /api/weapon-city/ticket-orders:
+    post:
+      tags: [WeaponCity]
+      operationId: createWeaponCityTicketOrder
+      summary: 购买示例景区门票
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateWeaponTicketOrderRequest'
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponseTicketOrder'
+        default:
+          $ref: '#/components/responses/ErrorResponse'
+
+  /api/weapon-city/experience-bookings:
+    post:
+      tags: [WeaponCity]
+      operationId: createWeaponCityExperienceBooking
+      summary: 预约示例景区体验项目
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateExperienceBookingRequest'
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponseExperienceBooking'
+        default:
+          $ref: '#/components/responses/ErrorResponse'
+
+  /api/mall/orders:
+    post:
+      tags: [Mall]
+      operationId: createMallOrder
+      summary: 创建特色商城订单
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateMallOrderRequest'
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponseMallOrder'
+        default:
+          $ref: '#/components/responses/ErrorResponse'
+
+  /api/orders/{orderId}/refund:
+    parameters:
+      - $ref: '#/components/parameters/OrderId'
+    post:
+      tags: [Orders]
+      operationId: refundOrder
+      summary: 提交订单退款
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RefundOrderRequest'
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponseRefund'
+        default:
+          $ref: '#/components/responses/ErrorResponse'
+
+  /api/members/me:
+    get:
+      tags: [Members]
+      operationId: getCurrentMember
+      summary: 获取当前会员积分、等级和有效期
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponseMember'
+        default:
+          $ref: '#/components/responses/ErrorResponse'
+
+  /api/members/me/points:
+    post:
+      tags: [Members]
+      operationId: recordMemberPoints
+      summary: 登记、结算、取消或冲正订单积分
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RecordMemberPointsRequest'
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponseMember'
+        default:
+          $ref: '#/components/responses/ErrorResponse'
+
+  /api/members/me/upgrade-check:
+    post:
+      tags: [Members]
+      operationId: checkMemberUpgrade
+      summary: 检查会员升级或到期降级
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [clientRequestId]
+              properties:
+                clientRequestId:
+                  $ref: '#/components/schemas/ClientRequestId'
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponseMember'
+        default:
+          $ref: '#/components/responses/ErrorResponse'
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  parameters:
+    BookingId:
+      name: bookingId
+      in: path
+      required: true
+      schema:
+        type: string
+    OrderId:
+      name: orderId
+      in: path
+      required: true
+      schema:
+        type: string
+  responses:
+    ErrorResponse:
+      description: 业务或系统错误
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ApiResponseError'
+  schemas:
+    DateTime:
+      type: string
+      pattern: '^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$'
+      example: '2026-08-03 14:30:00'
+    ClientRequestId:
+      type: string
+      minLength: 8
+      maxLength: 80
+      description: 客户端生成的幂等键，同一业务提交重试时必须保持不变。
+    AmountFen:
+      type: integer
+      format: int64
+      minimum: 0
+      description: 金额，单位为分。
+    ApiResponseError:
+      type: object
+      required: [code, errorCode, message, data]
+      properties:
+        code:
+          type: integer
+          example: 409
+          description: 非 200 的业务失败状态码。
+        errorCode:
+          type: string
+          pattern: '^[A-Z][A-Z0-9]*_[0-9]{3}$'
+          example: INVENTORY_409
+          description: 带业务模块前缀的稳定错误枚举，前端不得依赖 message 判断业务状态。
+        message:
+          type: string
+          description: 面向用户的错误提示。
+        detail:
+          type: string
+          nullable: true
+          description: 仅测试环境或受控日志场景返回的诊断信息。
+        data:
+          nullable: true
+    Person:
+      type: object
+      required: [name, phone]
+      properties:
+        name:
+          type: string
+        phone:
+          type: string
+          pattern: '^1\d{10}$'
+        idCard:
+          type: string
+          writeOnly: true
+    CreateBookingRequest:
+      type: object
+      required: [bookingType, checkInDate, passengerCount, contactName, contactPhone, clientRequestId]
+      properties:
+        bookingType:
+          type: string
+          enum: [hotel, vehicle]
+        lodgingAreaId:
+          type: string
+          nullable: true
+        lodgingAreaName:
+          type: string
+          nullable: true
+        checkInDate:
+          $ref: '#/components/schemas/DateTime'
+        checkOutDate:
+          allOf:
+            - $ref: '#/components/schemas/DateTime'
+          nullable: true
+        passengerCount:
+          type: integer
+          minimum: 1
+        contactName:
+          type: string
+        contactPhone:
+          type: string
+          pattern: '^1\d{10}$'
+        vehicleType:
+          type: string
+          nullable: true
+        vehicleTypeId:
+          type: string
+          nullable: true
+        rentalPlan:
+          type: string
+          nullable: true
+        quotedBasePriceFen:
+          allOf:
+            - $ref: '#/components/schemas/AmountFen'
+          nullable: true
+        memberPayablePriceFen:
+          allOf:
+            - $ref: '#/components/schemas/AmountFen'
+          nullable: true
+        memberLevelCode:
+          type: string
+        overtimeRateFen:
+          allOf:
+            - $ref: '#/components/schemas/AmountFen'
+          nullable: true
+        overMileageRateFen:
+          allOf:
+            - $ref: '#/components/schemas/AmountFen'
+          nullable: true
+        pricingVersion:
+          type: string
+          nullable: true
+        clientRequestId:
+          $ref: '#/components/schemas/ClientRequestId'
+    BookingStatusTransitionRequest:
+      type: object
+      required: [fromStatus, toStatus, occurredAt, clientRequestId]
+      properties:
+        fromStatus:
+          $ref: '#/components/schemas/VehicleStatusCode'
+        toStatus:
+          $ref: '#/components/schemas/VehicleStatusCode'
+        occurredAt:
+          $ref: '#/components/schemas/DateTime'
+        clientRequestId:
+          $ref: '#/components/schemas/ClientRequestId'
+    VehicleStatusCode:
+      type: string
+      enum: [PENDING_ACCEPT, DRIVER_ACCEPTED, DRIVER_EN_ROUTE, DRIVER_ARRIVED, SERVICE_IN_PROGRESS, SERVICE_COMPLETED, CANCELLED]
+    CancelRequest:
+      type: object
+      required: [clientRequestId, reason]
+      properties:
+        clientRequestId:
+          $ref: '#/components/schemas/ClientRequestId'
+        reason:
+          type: string
+        currentStatus:
+          type: string
+    CreateDeliveryOrderRequest:
+      type: object
+      required: [clientRequestId, address, items, foodAmountFen, deliveryFeeFen, payableAmountFen]
+      properties:
+        clientRequestId:
+          $ref: '#/components/schemas/ClientRequestId'
+        address:
+          type: string
+        items:
+          type: array
+          minItems: 1
+          items:
+            $ref: '#/components/schemas/OrderItem'
+        foodAmountFen:
+          $ref: '#/components/schemas/AmountFen'
+        deliveryFeeFen:
+          $ref: '#/components/schemas/AmountFen'
+        payableAmountFen:
+          $ref: '#/components/schemas/AmountFen'
+        originalAmountFen:
+          $ref: '#/components/schemas/AmountFen'
+        memberLevelCode:
+          type: string
+    OrderItem:
+      type: object
+      required: [quantity, unitPriceFen]
+      properties:
+        foodId:
+          type: string
+        productId:
+          type: string
+        name:
+          type: string
+        specification:
+          type: string
+        quantity:
+          type: integer
+          minimum: 1
+        unitPriceFen:
+          $ref: '#/components/schemas/AmountFen'
+    CreateLeisureTicketOrderRequest:
+      type: object
+      required: [clientRequestId, ticketTypeId, visitDate, admissionSlot, quantity, buyer]
+      properties:
+        clientRequestId:
+          $ref: '#/components/schemas/ClientRequestId'
+        ticketTypeId:
+          type: string
+        visitDate:
+          type: string
+          format: date
+        admissionSlot:
+          type: string
+        quantity:
+          type: integer
+          minimum: 1
+        unitPriceFen:
+          allOf:
+            - $ref: '#/components/schemas/AmountFen'
+          nullable: true
+        buyer:
+          $ref: '#/components/schemas/Person'
+    CreateWeaponTicketOrderRequest:
+      type: object
+      required: [clientRequestId, ticketTypeId, quantity, visitDate, visitor]
+      properties:
+        clientRequestId:
+          $ref: '#/components/schemas/ClientRequestId'
+        ticketTypeId:
+          type: string
+        quantity:
+          type: integer
+          minimum: 1
+        visitDate:
+          type: string
+          format: date
+        visitor:
+          $ref: '#/components/schemas/Person'
+    CreateExperienceBookingRequest:
+      type: object
+      required: [clientRequestId, projectId, experienceDate, timeSlot, participant]
+      properties:
+        clientRequestId:
+          $ref: '#/components/schemas/ClientRequestId'
+        projectId:
+          type: string
+        experienceDate:
+          type: string
+          format: date
+        timeSlot:
+          type: string
+        participant:
+          $ref: '#/components/schemas/Person'
+    CreateMallOrderRequest:
+      type: object
+      required: [clientRequestId, shippingAddress, items, payableAmountFen]
+      properties:
+        clientRequestId:
+          $ref: '#/components/schemas/ClientRequestId'
+        shippingAddress:
+          type: string
+        items:
+          type: array
+          minItems: 1
+          items:
+            $ref: '#/components/schemas/OrderItem'
+        payableAmountFen:
+          $ref: '#/components/schemas/AmountFen'
+    RefundOrderRequest:
+      type: object
+      required: [clientRequestId, reason]
+      properties:
+        clientRequestId:
+          $ref: '#/components/schemas/ClientRequestId'
+        reason:
+          type: string
+    RecordMemberPointsRequest:
+      type: object
+      required: [clientRequestId, action, orderId, paidAmountFen, description]
+      properties:
+        clientRequestId:
+          $ref: '#/components/schemas/ClientRequestId'
+        action:
+          type: string
+          enum: [REGISTER, SETTLE, CANCEL, REVERSE]
+        orderId:
+          type: string
+        paidAmountFen:
+          $ref: '#/components/schemas/AmountFen'
+        description:
+          type: string
+    ApiResponseHome:
+      type: object
+      required: [code, message, data]
+      properties:
+        code:
+          type: integer
+          enum: [200]
+        message:
+          type: string
+        data:
+          type: object
+          required: [notices, quickItems]
+          properties:
+            notices:
+              type: array
+              items:
+                type: string
+            quickItems:
+              type: array
+              items:
+                type: object
+                required: [name, desc, icon, color, url]
+                properties:
+                  name: { type: string }
+                  desc: { type: string }
+                  icon: { type: string }
+                  color: { type: string }
+                  url: { type: string }
+    ApiResponseBooking:
+      type: object
+      required: [code, message, data]
+      properties:
+        code: { type: integer, enum: [200] }
+        message: { type: string }
+        data:
+          type: object
+          required: [bookingId, statusCode, statusUpdatedAt]
+          properties:
+            bookingId: { type: string }
+            createdAt: { $ref: '#/components/schemas/DateTime' }
+            statusCode: { type: string }
+            statusUpdatedAt: { $ref: '#/components/schemas/DateTime' }
+            driver: { nullable: true }
+            settlement: { nullable: true }
+    ApiResponseCancellation:
+      type: object
+      required: [code, message, data]
+      properties:
+        code: { type: integer, enum: [200] }
+        message: { type: string }
+        data:
+          type: object
+          properties:
+            orderId: { type: string }
+            bookingId: { type: string }
+            cancelled: { type: boolean }
+            statusCode: { type: string }
+            cancelledAt: { $ref: '#/components/schemas/DateTime' }
+            refundStatus: { type: string }
+          anyOf:
+            - required: [orderId]
+            - required: [bookingId]
+    ApiResponseDeliveryOrder:
+      type: object
+      required: [code, message, data]
+      properties:
+        code: { type: integer, enum: [200] }
+        message: { type: string }
+        data:
+          type: object
+          required: [orderId, statusCode, createdAt, statusUpdatedAt]
+          properties:
+            orderId: { type: string }
+            statusCode: { type: string, enum: [PENDING_ACCEPT, ACCEPTED, DELIVERING, ARRIVING, DELIVERED, CANCELLED] }
+            createdAt: { $ref: '#/components/schemas/DateTime' }
+            statusUpdatedAt: { $ref: '#/components/schemas/DateTime' }
+            estimatedMinutes: { type: integer }
+    ApiResponseTicketOrder:
+      type: object
+      required: [code, message, data]
+      properties:
+        code: { type: integer, enum: [200] }
+        message: { type: string }
+        data:
+          type: object
+          required: [orderId, statusCode]
+          properties:
+            orderId: { type: string }
+            electronicTicketCode: { type: string }
+            statusCode: { type: string, enum: [PAID, CANCELLED, REFUNDED] }
+            status: { type: string, deprecated: true }
+            visitDate: { type: string, format: date }
+            admissionSlot: { type: string }
+            createdAt: { $ref: '#/components/schemas/DateTime' }
+    ApiResponseExperienceBooking:
+      type: object
+      required: [code, message, data]
+      properties:
+        code: { type: integer, enum: [200] }
+        message: { type: string }
+        data:
+          type: object
+          required: [bookingId, verificationCode, statusCode, experienceDate, timeSlot]
+          properties:
+            bookingId: { type: string }
+            verificationCode: { type: string }
+            statusCode: { type: string, enum: [BOOKED, CANCELLED, COMPLETED] }
+            status: { type: string, deprecated: true }
+            experienceDate: { type: string, format: date }
+            timeSlot: { type: string }
+            createdAt: { $ref: '#/components/schemas/DateTime' }
+    ApiResponseMallOrder:
+      type: object
+      required: [code, message, data]
+      properties:
+        code: { type: integer, enum: [200] }
+        message: { type: string }
+        data:
+          type: object
+          required: [orderId, statusCode, payableAmountFen, createdAt]
+          properties:
+            orderId: { type: string }
+            statusCode: { type: string, enum: [PENDING_PAYMENT, PAID, CANCELLED] }
+            payableAmountFen: { $ref: '#/components/schemas/AmountFen' }
+            createdAt: { $ref: '#/components/schemas/DateTime' }
+    ApiResponseRefund:
+      type: object
+      required: [code, message, data]
+      properties:
+        code: { type: integer, enum: [200] }
+        message: { type: string }
+        data:
+          type: object
+          required: [refundId, orderId, refundStatus, refundedAt]
+          properties:
+            refundId: { type: string }
+            orderId: { type: string }
+            refundStatus: { type: string, enum: [REFUNDING, REFUNDED, REJECTED] }
+            refundedAt: { $ref: '#/components/schemas/DateTime' }
+    PendingPointOrder:
+      type: object
+      required: [orderId, amountFen, points, description, registeredAt]
+      properties:
+        orderId: { type: string }
+        amountFen: { $ref: '#/components/schemas/AmountFen' }
+        points: { type: integer, minimum: 0 }
+        description: { type: string }
+        registeredAt: { $ref: '#/components/schemas/DateTime' }
+    PointRecord:
+      type: object
+      required: [orderId, points, description, createdAt]
+      properties:
+        orderId: { type: string }
+        relatedOrderId: { type: string }
+        points: { type: integer }
+        description: { type: string }
+        createdAt: { $ref: '#/components/schemas/DateTime' }
+    ApiResponseMember:
+      type: object
+      required: [code, message, data]
+      properties:
+        code: { type: integer, enum: [200] }
+        message: { type: string }
+        data:
+          type: object
+          required: [nickname, avatarText, avatarUrl, memberNo, points, growthPoints, balanceFen, coupons, levelCode, level, levelBadge, discountRate, discountLabel, validUntil, rewardedOrderIds, pendingPointOrders, pointRecords, progress, nextLevelName, pointsToNext, levelHint, validityLabel]
+          properties:
+            nickname: { type: string }
+            avatarText: { type: string }
+            avatarUrl: { type: string }
+            memberNo: { type: string }
+            points: { type: integer, minimum: 0 }
+            growthPoints: { type: integer, minimum: 0 }
+            balanceFen: { $ref: '#/components/schemas/AmountFen' }
+            coupons: { type: integer, minimum: 0 }
+            levelCode: { type: string, enum: [NORMAL, SILVER, GOLD, PLATINUM, DIAMOND, BLACK_GOLD] }
+            level: { type: string }
+            levelBadge: { type: string }
+            discountRate: { type: number, minimum: 0.7, maximum: 1 }
+            discountLabel: { type: string }
+            validUntil: { type: string, format: date, nullable: true }
+            rewardedOrderIds:
+              type: array
+              items: { type: string }
+            pendingPointOrders:
+              type: array
+              items: { $ref: '#/components/schemas/PendingPointOrder' }
+            pointRecords:
+              type: array
+              items: { $ref: '#/components/schemas/PointRecord' }
+            progress: { type: integer, minimum: 0, maximum: 100 }
+            nextLevelName: { type: string }
+            pointsToNext: { type: integer, minimum: 0 }
+            levelHint: { type: string }
+            validityLabel: { type: string }
+            expiredNotice: { type: string }
+            upgradeNotice: { type: string }
+    PageResponse:
+      type: object
+      required: [total, pageNum, pageSize, list]
+      properties:
+        total: { type: integer, minimum: 0 }
+        pageNum: { type: integer, minimum: 1 }
+        pageSize: { type: integer, minimum: 1, maximum: 100 }
+        list:
+          type: array
+          items: {}

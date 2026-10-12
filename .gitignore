@@ -1,0 +1,34 @@
+# 依赖与构建产物
+**/node_modules/
+**/target/
+**/dist/
+.m2-build-cache/
+output/
+tmp/
+
+# IDE 与操作系统文件
+**/.idea/
+**/.vscode/
+**/.settings/
+**/*.iml
+**/.DS_Store
+**/Thumbs.db
+
+# 本地配置、密钥和私有开发者配置
+**/.env
+**/.env.*
+!**/.env.example
+**/application-local.properties
+**/project.private.config.json
+**/http-client.private.env.json
+**/http-client.env.json
+
+# 运行日志和接口响应
+**/*.log
+**/*.pid
+**/.logs/
+**/http/response/
+**/http/*-response.json
+
+# Git 元数据恢复备份仅保留在本机
+.git-backups/

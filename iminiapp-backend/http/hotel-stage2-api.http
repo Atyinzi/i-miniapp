@@ -1,0 +1,118 @@
+### 住宿第二阶段联调：先执行 hotel-stage1-api.http 创建酒店、房型和价格库存日历
+
+### 用户登录
+# @name userLogin
+POST http://localhost:8080/api/v1/app/auth/mock-login
+Content-Type: application/json
+
+{
+  "displayName": "住宿预订用户",
+  "accountType": "USER"
+}
+
+### 住宿报价
+POST http://localhost:8080/api/v1/app/hotel/quote
+Authorization: Bearer {{userLogin.response.body.$.data.accessToken}}
+Content-Type: application/json
+
+{
+  "roomTypeId": 1,
+  "checkInDate": "2026-10-01",
+  "checkOutDate": "2026-10-04",
+  "roomCount": 1
+}
+
+### 创建住宿订单
+# @name createBooking
+POST http://localhost:8080/api/v1/app/hotel/bookings
+Authorization: Bearer {{userLogin.response.body.$.data.accessToken}}
+Idempotency-Key: hotel-create-20261001-001
+Content-Type: application/json
+
+{
+  "roomTypeId": 1,
+  "checkInDate": "2026-10-01",
+  "checkOutDate": "2026-10-04",
+  "roomCount": 1,
+  "guestCount": 1,
+  "contactName": "张三",
+  "contactMobile": "13800138000",
+  "estimatedArrivalTime": "18:00:00",
+  "specialRequests": "安排安静楼层",
+  "remark": "住宿联调订单",
+  "guests": [
+    {
+      "name": "张三",
+      "mobile": "13800138000",
+      "idType": "ID_CARD",
+      "idNo": "110101199001011234",
+      "roomIndex": 1
+    }
+  ]
+}
+
+### 查询我的住宿订单
+GET http://localhost:8080/api/v1/app/hotel/bookings
+Authorization: Bearer {{userLogin.response.body.$.data.accessToken}}
+
+### 模拟在线支付（orderId 使用创建订单返回值）
+POST http://localhost:8080/api/v1/app/orders/1/mock-pay
+Authorization: Bearer {{userLogin.response.body.$.data.accessToken}}
+Idempotency-Key: hotel-pay-20261001-001
+
+### 取消待支付住宿订单（reservationId 使用创建订单返回值）
+POST http://localhost:8080/api/v1/app/hotel/bookings/1/cancel
+Authorization: Bearer {{userLogin.response.body.$.data.accessToken}}
+
+### 修改待支付住宿订单
+PUT http://localhost:8080/api/v1/app/hotel/bookings/1
+Authorization: Bearer {{userLogin.response.body.$.data.accessToken}}
+Idempotency-Key: hotel-modify-20261001-001
+Content-Type: application/json
+
+{
+  "roomTypeId": 1,
+  "checkInDate": "2026-10-05",
+  "checkOutDate": "2026-10-07",
+  "roomCount": 1,
+  "guestCount": 1,
+  "contactName": "张三",
+  "contactMobile": "13800138000",
+  "estimatedArrivalTime": "19:00:00",
+  "specialRequests": "修改入住日期",
+  "remark": "住宿改订",
+  "guests": [
+    {
+      "name": "张三",
+      "mobile": "13800138000",
+      "idType": "ID_CARD",
+      "idNo": "110101199001011234",
+      "roomIndex": 1
+    }
+  ]
+}
+
+### 已支付订单申请退款
+POST http://localhost:8080/api/v1/app/hotel/bookings/1/refund-applications
+Authorization: Bearer {{userLogin.response.body.$.data.accessToken}}
+Idempotency-Key: hotel-refund-20261001-001
+Content-Type: application/json
+
+{
+  "reason": "行程调整"
+}
+
+### 管理员查询未处理库存预警
+### 先使用 hotel-stage1-api.http 中的 adminLogin，或在此处执行管理员登录
+# @name adminLogin
+POST http://localhost:8080/api/v1/app/auth/mock-login
+Content-Type: application/json
+
+{
+  "displayName": "住宿管理员",
+  "accountType": "ADMIN"
+}
+
+### 查询预警
+GET http://localhost:8080/api/v1/admin/hotels/inventory-alerts?status=OPEN
+Authorization: Bearer {{adminLogin.response.body.$.data.accessToken}}

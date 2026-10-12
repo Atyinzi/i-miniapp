@@ -1,0 +1,39 @@
+<view class="page internal-vehicle-page">
+  <view class="internal-hero"><text>INTERNAL VEHICLE</text><text>内部用车</text><text>员工身份申请 · 审核派车 · 行程跟踪</text></view>
+  <view wx:if="{{loading}}" class="internal-empty card">正在读取员工身份…</view>
+
+  <view wx:elif="{{!profile}}" class="identity-card card">
+    <view class="identity-symbol">员</view><text>绑定内部员工身份</text><text>请先完成微信手机号授权，再输入管理员预先建立的员工工号。手机号仅用于核验身份。</text>
+    <input value="{{employeeNo}}" maxlength="50" bindinput="employeeNoInput" placeholder="请输入员工工号" />
+    <button class="phone-link" bindtap="openPhoneAuthorization">先去授权微信手机号</button>
+    <button class="primary-btn" loading="{{submitting}}" disabled="{{submitting}}" bindtap="bindIdentity">验证并绑定</button>
+  </view>
+
+  <block wx:else>
+    <view class="employee-card card"><view><text>{{profile.maskedName}}</text><text>{{profile.status==='ACTIVE'?'在职':'已停用'}}</text></view><text>{{profile.employeeNo}} · {{profile.departmentName}}</text></view>
+
+    <view wx:if="{{profile.status==='ACTIVE'}}" class="application-form card">
+      <view class="form-heading"><text>提交用车申请</text><text>内部用车不需要支付租金和押金</text></view>
+      <view class="field-row"><view><text>用车日期</text><picker mode="date" value="{{form.date}}" bindchange="dateChange"><view>{{form.date}}</view></picker></view></view>
+      <view class="field-pair"><view><text>开始时间</text><picker mode="time" value="{{form.startTime}}" bindchange="startTimeChange"><view>{{form.startTime}}</view></picker></view><view><text>结束时间</text><picker mode="time" value="{{form.endTime}}" bindchange="endTimeChange"><view>{{form.endTime}}</view></picker></view></view>
+      <view class="field-row"><text>出发地点</text><input value="{{form.departure}}" data-field="departure" bindinput="fieldInput" placeholder="例如 i某小程序集团办公楼" /></view>
+      <view class="field-row"><text>目的地点</text><input value="{{form.destination}}" data-field="destination" bindinput="fieldInput" placeholder="例如 示例景区" /></view>
+      <view class="field-pair"><view><text>乘车人数</text><input type="number" value="{{form.passengerCount}}" data-field="passengerCount" bindinput="fieldInput" /></view><view><text>预计里程（km）</text><input type="digit" value="{{form.estimatedKm}}" data-field="estimatedKm" bindinput="fieldInput" /></view></view>
+      <view class="field-row"><text>用车事由</text><textarea value="{{form.purpose}}" data-field="purpose" bindinput="fieldInput" maxlength="200" placeholder="请填写真实、具体的用车事由"></textarea></view>
+      <button class="primary-btn" loading="{{submitting}}" disabled="{{submitting}}" bindtap="submitApplication">提交审核</button>
+    </view>
+    <view wx:else class="internal-empty card">当前员工档案已停用，不能新增内部用车申请，请联系管理员。</view>
+
+    <view class="application-list"><view class="list-heading"><text>我的用车申请</text><text>{{applications.length}} 条</text></view>
+      <view wx:if="{{!applications.length}}" class="internal-empty card">尚未提交内部用车申请</view>
+      <view wx:for="{{applications}}" wx:key="id" class="application-card card">
+        <view class="application-head"><view><text>{{item.applicationNo}}</text><text>{{item.timeLabel}}</text></view><text>{{item.statusLabel}}</text></view>
+        <view class="application-route"><text>{{item.departure}}</text><text>→</text><text>{{item.destination}}</text></view>
+        <view class="application-meta"><text>{{item.passengerCount}} 人 · 预计 {{item.estimatedKm}} km</text><text>{{item.purpose}}</text></view>
+        <view wx:if="{{item.plateNo}}" class="dispatch-info"><text>已派车辆</text><text>{{item.plateNo}} · {{item.driverNo || '司机待确认'}}</text></view>
+        <text wx:if="{{item.reviewerComment}}" class="review-comment">审核意见：{{item.reviewerComment}}</text>
+        <button wx:if="{{item.canCancel}}" data-id="{{item.id}}" bindtap="cancelApplication">撤销申请</button>
+      </view>
+    </view>
+  </block>
+</view>

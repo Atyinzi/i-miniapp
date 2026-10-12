@@ -1,0 +1,214 @@
+<view class="page">
+  <view class="booking-head">
+    <text class="head-en">RESERVATION</text>
+    <text>{{isHotel ? hotelName + '预订' : '车队预约'}}</text>
+    <text class="booking-sub">填写信息，开启安心旅程</text>
+  </view>
+  <view class="member-price-card card" wx:if="{{isHotel || !vehicleOrderId}}">
+    <view><text>{{memberBenefit.level}}</text><text>{{memberBenefit.discountLabel}} · 订单完成后发放积分</text></view>
+    <view wx:if="{{memberPayablePrice}}"><text>原价 ¥{{memberOriginalPrice}}</text><text>会员价 ¥{{memberPayablePrice}}</text><text>已优惠 ¥{{memberDiscountAmount}}</text></view>
+    <text wx:else>当前项目价格确认后，将自动按会员等级计算优惠。</text>
+  </view>
+  <view class="booking-card card">
+    <view class="form-title">{{isHotel ? '入住信息' : '用车信息'}}</view>
+    <view class="form-row" wx:if="{{isHotel && roomName}}">
+      <text>预订房型</text>
+      <view>{{roomName}}</view>
+    </view>
+    <view class="vehicle-selector" wx:if="{{!isHotel}}">
+      <view class="vehicle-selector-head">
+        <view><text>选择车型</text><text>共 9 种车型，左右滑动查看</text></view>
+        <text>{{carIndex + 1}} / 9</text>
+      </view>
+      <scroll-view class="vehicle-scroll" scroll-x show-scrollbar="{{false}}">
+        <button
+          class="vehicle-chip {{carIndex===index?'vehicle-chip-active':''}}"
+          wx:for="{{carTypes}}"
+          wx:key="id"
+          data-index="{{index}}"
+          bindtap="selectCar"
+        >
+          <text>{{item.name}}</text>
+          <text>{{carIndex===index?'已选择':'查看费用'}}</text>
+        </button>
+      </scroll-view>
+      <view class="vehicle-price-card">
+        <view class="vehicle-price-title">
+          <view><text>{{selectedCar.name}}</text><text>统一定价参考</text></view>
+          <view><text>¥</text><b>{{availablePlans[planIndex].price}}</b><text>起</text></view>
+        </view>
+        <view class="vehicle-price-grid">
+          <view wx:for="{{selectedCar.priceItems}}" wx:key="key">
+            <text>{{item.label}}</text>
+            <view class="{{item.value===null?'price-unavailable':''}}">
+              <b>{{item.value===null?'—':'¥'+item.value}}</b>
+              <text wx:if="{{item.value!==null}}">/{{item.unit}}</text>
+            </view>
+          </view>
+        </view>
+        <text class="vehicle-price-note">超时与超公里费用按实际行程计算，最终费用由工作人员确认。</text>
+        <button class="vehicle-rule-toggle" bindtap="togglePricingRules">
+          <text>查看计费规则</text>
+          <text class="{{pricingRulesVisible?'rule-arrow-open':''}}">⌄</text>
+        </button>
+        <view class="vehicle-rules" wx:if="{{pricingRulesVisible}}">
+          <text>• 以上车辆为汽油或柴油车辆。</text>
+          <text>• 小轿车临租不设起步价，50 公里或 3 小时内按 2 元/公里计；超出后不满半天按半天计，超过半天不满全天按全天计。</text>
+          <text>• 小轿车、商务车、越野车日租：半天限 150 公里或 4 小时，全天限 300 公里或 8 小时。</text>
+          <text>• 中型客车日租：半天限 100 公里或 4 小时，全天限 200 公里或 8 小时。</text>
+          <text>• 小轿车月租每月限 4000 公里，裸租每月限 3500 公里，超出部分按表中标准计费。</text>
+        </view>
+      </view>
+    </view>
+    <view class="form-row" wx:if="{{!isHotel}}">
+      <text>计费方式</text>
+      <picker range="{{availablePlans}}" range-key="label" value="{{planIndex}}" bindchange="planChange">
+        <view class="plan-value">
+          <text>{{availablePlans[planIndex].label}}</text>
+          <b>¥{{availablePlans[planIndex].price}}</b>
+          <text>›</text>
+        </view>
+      </picker>
+    </view>
+    <view class="form-row">
+      <text>{{isHotel ? '入住日期' : '用车日期'}}</text>
+      <picker mode="date" value="{{date}}" bindchange="dateChange">
+        <view>{{date}} <text>›</text></view>
+      </picker>
+    </view>
+    <view class="form-row" wx:if="{{isHotel}}">
+      <text>离店日期</text>
+      <picker mode="date" value="{{endDate}}" bindchange="endDateChange">
+        <view>{{endDate}} <text>›</text></view>
+      </picker>
+    </view>
+    <view class="form-row" wx:if="{{!isHotel}}">
+      <text>用车时间</text>
+      <picker mode="time" value="{{time}}" bindchange="timeChange">
+        <view>{{time}} <text>›</text></view>
+      </picker>
+    </view>
+    <view class="form-row">
+      <text>{{isHotel ? '入住人数' : '乘车人数'}}</text>
+      <view class="stepper">
+        <button class="stepper-button" disabled="{{count<=1}}" bindtap="minus" aria-label="减少人数">−</button>
+        <view class="stepper-value"><b>{{count}}</b><text>人</text></view>
+        <button class="stepper-button stepper-plus" bindtap="plus" aria-label="增加人数">＋</button>
+      </view>
+    </view>
+  </view>
+  <view class="booking-card card">
+    <view class="form-title">联系人信息</view>
+    <view class="vehicle-location-field" wx:if="{{!isHotel}}">
+      <view class="vehicle-location-input"><text>上车地点</text><input placeholder="地图选点或手动输入" value="{{departure}}" bindinput="departureInput"/><button data-target="departure" bindtap="chooseVehicleLocation">地图选点</button></view>
+      <scroll-view class="common-place-list" scroll-x show-scrollbar="{{false}}"><button wx:for="{{commonPlaces}}" wx:key="key" data-key="{{item.key}}" data-target="departure" bindtap="useCommonPlace">{{item.name}}</button></scroll-view>
+    </view>
+    <view class="vehicle-location-field" wx:if="{{!isHotel}}">
+      <view class="vehicle-location-input"><text>目的地</text><input placeholder="地图选点或手动输入" value="{{destination}}" bindinput="destinationInput"/><button data-target="destination" bindtap="chooseVehicleLocation">地图选点</button></view>
+      <scroll-view class="common-place-list" scroll-x show-scrollbar="{{false}}"><button wx:for="{{commonPlaces}}" wx:key="key" data-key="{{item.key}}" data-target="destination" bindtap="useCommonPlace">{{item.name}}</button></scroll-view>
+    </view>
+    <view class="input-row">
+      <text>联系人</text>
+      <input placeholder="请输入姓名" value="{{name}}" bindinput="nameInput"/>
+    </view>
+    <view class="input-row">
+      <text>手机号</text>
+      <input type="number" maxlength="11" placeholder="请输入手机号" value="{{phone}}" bindinput="phoneInput"/>
+    </view>
+    <view class="input-row" wx:if="{{isHotel}}">
+      <text>身份证号</text>
+      <input maxlength="18" placeholder="用于实名入住" value="{{guestIdCard}}" bindinput="guestIdCardInput"/>
+    </view>
+  </view>
+
+  <view id="vehicle-progress" class="vehicle-progress-card card" wx:if="{{!isHotel && vehicleOrderId}}">
+    <view class="vehicle-progress-head">
+      <view>
+        <text>车辆服务进度</text>
+        <text>订单 {{vehicleOrderId}}</text>
+      </view>
+      <view>
+        <text>{{vehicleStatusLabel}}</text>
+      </view>
+    </view>
+
+    <view class="vehicle-order-summary" wx:if="{{vehicleOrderSummary}}">
+      <view><text>{{vehicleOrderSummary.vehicleName}}</text><text>{{vehicleOrderSummary.rentalPlanLabel}} · ¥{{vehicleOrderSummary.basePrice}}</text></view>
+      <view><text>{{vehicleOrderSummary.useDate}} {{vehicleOrderSummary.useTime}}</text><text>{{vehicleOrderSummary.passengerCount}} 人乘车</text></view>
+    </view>
+
+    <view class="driver-card" wx:if="{{vehicleDriver}}">
+      <view class="driver-avatar">司</view>
+      <view class="driver-info">
+          <view><text>{{vehicleDriver.driverName}}</text></view>
+        <text>{{vehicleDriver.vehiclePlate}} · {{vehicleDriver.driverPhoneMasked}}</text>
+      </view>
+      <button disabled="{{!vehicleDriver.driverPhone}}" bindtap="callVehicleDriver">联系司机</button>
+    </view>
+    <view class="driver-waiting" wx:else>
+      <view>司</view>
+      <view><text>司机等待接单</text><text>接单后将在这里展示司机、车牌和联系电话</text></view>
+    </view>
+
+    <view class="driver-location-card" wx:if="{{vehicleDriverLocation}}">
+      <view><text>司机实时位置</text><text>每分钟刷新 · {{vehicleDriverLocationUpdatedAt}}</text></view>
+      <map class="driver-location-map" latitude="{{vehicleDriverLocation.latitude}}" longitude="{{vehicleDriverLocation.longitude}}" markers="{{vehicleDriverMarkers}}" scale="15" show-location="{{false}}"></map>
+    </view>
+    <view class="driver-location-empty" wx:elif="{{vehicleDriver}}">司机尚未上报位置，页面将每分钟自动检查。</view>
+
+    <view class="vehicle-status-timeline">
+      <view wx:for="{{vehicleProgressSteps}}" wx:key="code" class="vehicle-status-step vehicle-status-{{item.state}}">
+        <view class="vehicle-status-rail">
+          <text>{{item.state==='done'?'✓':index+1}}</text>
+          <view wx:if="{{index!==vehicleProgressSteps.length-1}}"></view>
+        </view>
+        <view class="vehicle-status-copy">
+          <view><text>{{item.label}}</text><text wx:if="{{item.time}}">{{item.time}}</text></view>
+          <text>{{item.description}}</text>
+        </view>
+      </view>
+    </view>
+
+    <view class="vehicle-settlement" wx:if="{{vehicleSettlement}}">
+      <view><text>服务结算</text><text>{{vehicleSettlement.status==='SETTLED'?'已结清':'待补款'}}</text></view>
+      <text>超时费 ¥{{vehicleSettlement.overtimeAmountCent/100}} · 超公里费 ¥{{vehicleSettlement.overDistanceAmountCent/100}}</text>
+      <text wx:if="{{vehicleSettlement.supplementAmountCent>0}}">应补金额 ¥{{vehicleSettlement.supplementAmountCent/100}} · 已补 ¥{{vehicleSettlement.supplementPaidCent/100}}</text>
+    </view>
+
+    <view class="vehicle-progress-actions">
+      <button
+        wx:if="{{vehicleStatusCode==='PENDING_PAYMENT'}}"
+        class="vehicle-finish-action"
+        loading="{{paying}}"
+        disabled="{{paying || cancelling}}"
+        bindtap="payVehicleReservation"
+      >{{paying?'支付中':'微信支付'}}</button>
+      <button
+        wx:if="{{vehicleStatusCode==='PENDING_SUPPLEMENT' && vehicleSettlement}}"
+        class="vehicle-finish-action"
+        loading="{{paying}}"
+        disabled="{{paying}}"
+        bindtap="payVehicleSupplement"
+      >{{paying?'补款中':'微信补款'}}<text wx:if="{{!paying}}"> ¥{{(vehicleSettlement.supplementAmountCent-vehicleSettlement.supplementPaidCent)/100}}</text></button>
+      <button
+        wx:if="{{vehicleStatusCode==='PENDING_PAYMENT' || vehicleStatusCode==='PENDING_ACCEPT'}}"
+        class="vehicle-cancel-action"
+        loading="{{cancelling}}"
+        disabled="{{cancelling || paying}}"
+        bindtap="cancelVehicleReservation"
+      >{{cancelling?'取消中':'取消预约'}}</button>
+      <button wx:if="{{vehicleStatusCode==='SERVICE_COMPLETED'}}" bindtap="resetVehicleBooking">再次预约</button>
+      <button wx:if="{{vehicleStatusCode==='SERVICE_COMPLETED'}}" class="vehicle-finish-action" bindtap="finishVehicleBooking">完成</button>
+    </view>
+    <text class="vehicle-backend-hint">服务状态由调度后台更新，本页面会自动刷新。</text>
+  </view>
+
+  <view class="note" wx:if="{{isHotel || !vehicleOrderId}}">温馨提示：提交预约后，工作人员将在 30 分钟内与您确认。</view>
+  <button
+    class="primary-btn submit"
+    wx:if="{{isHotel || !vehicleOrderId}}"
+    loading="{{submitting}}"
+    disabled="{{submitting}}"
+    bindtap="submit"
+  >{{submitting?'提交中':'提交预约'}}</button>
+</view>

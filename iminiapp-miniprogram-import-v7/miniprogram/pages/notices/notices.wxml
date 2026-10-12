@@ -1,0 +1,77 @@
+<view class="information-page">
+  <view class="status-bar" style="height:{{statusBarHeight}}px"></view>
+
+  <view wx:if="{{viewMode==='list'}}" class="information-nav" style="top:{{statusBarHeight}}px">
+    <button class="nav-back" bindtap="navBack" aria-label="返回首页">‹</button>
+    <text class="nav-title">i某小程序资讯</text>
+    <view class="nav-search">
+      <text class="search-symbol">⌕</text>
+      <input value="{{keyword}}" placeholder="搜索标题、关键词" confirm-type="search" bindinput="keywordInput"/>
+      <button wx:if="{{keyword}}" class="search-clear" bindtap="clearKeyword">×</button>
+    </view>
+  </view>
+
+  <view wx:if="{{viewMode==='detail'}}" class="information-nav detail-nav" style="top:{{statusBarHeight}}px">
+    <button class="nav-back" bindtap="navBack" aria-label="返回资讯列表">‹</button>
+    <text class="detail-nav-title">资讯详情</text>
+    <view class="nav-placeholder"></view>
+  </view>
+
+  <view wx:if="{{viewMode==='list'}}" class="list-view">
+    <scroll-view class="category-tabs" scroll-x show-scrollbar="{{false}}">
+      <button wx:for="{{categories}}" wx:key="*this" class="category-tab {{activeCategory===item?'category-tab-active':''}}" data-category="{{item}}" bindtap="chooseCategory">{{item}}</button>
+    </scroll-view>
+
+    <view class="information-intro">
+      <view><text>资讯速览</text><text>i某小程序动态、场馆介绍与服务公告</text></view>
+      <text>{{visibleArticles.length}}篇</text>
+    </view>
+
+    <view class="article-list">
+      <view wx:for="{{visibleArticles}}" wx:key="id" class="article-card" data-id="{{item.id}}" bindtap="openArticle" hover-class="article-card-pressed">
+        <image class="article-cover" src="{{item.cover}}" mode="aspectFill"/>
+        <view class="article-copy">
+          <view class="article-meta"><text class="article-category">{{item.category}}</text><text>{{item.date}}</text></view>
+          <text class="article-title">{{item.title}}</text>
+          <text class="article-summary">{{item.summary}}</text>
+          <view class="article-source"><text>{{item.author}}</text><text>阅读全文 ›</text></view>
+        </view>
+      </view>
+    </view>
+
+    <view wx:if="{{!visibleArticles.length}}" class="empty-information">
+      <text class="empty-symbol">文</text>
+      <text>没有找到相关资讯</text>
+      <text>换个关键词或分类试试</text>
+    </view>
+  </view>
+
+  <view wx:if="{{viewMode==='detail'}}" class="detail-view">
+    <view class="detail-category-row"><text>{{currentArticle.category}}</text><text>i某小程序资讯</text></view>
+    <text class="information-title">{{currentArticle.title}}</text>
+    <view class="information-byline"><text>{{currentArticle.date}}</text><text>{{currentArticle.author}}</text></view>
+    <view class="title-divider"><view></view></view>
+    <text class="information-lead">{{currentArticle.summary}}</text>
+
+    <block wx:for="{{currentArticle.body}}" wx:key="*this" wx:for-item="paragraph" wx:for-index="paragraphIndex">
+      <text class="information-paragraph">{{paragraph}}</text>
+      <image wx:if="{{currentArticle.images[paragraphIndex]}}" class="information-image" src="{{currentArticle.images[paragraphIndex]}}" mode="aspectFill" data-url="{{currentArticle.images[paragraphIndex]}}" bindtap="previewArticleImage"/>
+    </block>
+
+    <view class="information-end"><view></view><text>全文完</text><view></view></view>
+    <view class="detail-actions">
+      <button class="favorite-button {{currentArticle.isFavorite?'favorite-active':''}}" bindtap="toggleFavorite"><text>{{currentArticle.isFavorite?'★':'☆'}}</text><text>{{currentArticle.isFavorite?'已收藏':'收藏'}}</text></button>
+      <button class="share-button" bindtap="openSharePanel"><text>↗</text><text>分享资讯</text></button>
+    </view>
+  </view>
+
+  <view wx:if="{{sharePanelVisible}}" class="share-channel-mask" bindtap="closeSharePanel" catchtouchmove="preventPreviewTap"><view class="share-channel-panel" catchtap="preventPreviewTap"><view class="share-channel-head"><view><text>分享到</text><text>使用微信原生分享</text></view><button bindtap="closeSharePanel">×</button></view><view class="share-channel-options"><button open-type="share" bindtap="closeSharePanel"><view class="share-channel-icon wechat-channel">微</view><view><text>微信好友</text><text>使用微信原生分享</text></view><text>›</text></button></view></view></view>
+
+  <view wx:if="{{previewVisible}}" class="image-preview" bindtap="closePreview" catchtouchmove="preventPreviewTap">
+    <view class="preview-panel" catchtap="preventPreviewTap">
+      <view class="preview-head"><text>资讯图片</text><button bindtap="closePreview">×</button></view>
+      <image class="preview-image" src="{{previewImage}}" mode="aspectFit"/>
+      <text class="preview-hint">点击背景关闭预览</text>
+    </view>
+  </view>
+</view>

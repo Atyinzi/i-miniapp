@@ -1,0 +1,24 @@
+<view class="page driver-page">
+  <view class="driver-hero"><text>DRIVER CONSOLE</text><text>司机工作台</text><text>接单、出发、位置上报与服务完成</text></view>
+  <view wx:if="{{loading}}" class="driver-empty card">正在加载司机任务…</view>
+  <view wx:elif="{{!profile}}" class="driver-empty card"><text>当前账号未绑定司机档案</text><text>请联系管理员在车辆管理中完成账号绑定。</text></view>
+  <block wx:else>
+    <view class="driver-profile card"><view><text>{{profile.driverNo}}</text><text>{{profile.status}}</text></view><text>位置仅在服务期间且由您主动开启后上报，离开本页自动停止。</text></view>
+    <view wx:if="{{activeTask}}" class="task-card card">
+      <view class="task-kind">{{activeTask.businessLabel}}</view>
+      <view class="task-head"><view><text>{{activeTask.plateNo}}</text><text>{{activeTask.orderNo}}</text></view><text>{{activeTask.statusLabel}}</text></view>
+      <view class="route"><view><text>起</text><text>{{activeTask.departure}}</text></view><view><text>终</text><text>{{activeTask.destination}}</text></view></view>
+      <view class="task-meta"><text>{{activeTask.startAt}}</text><text>{{activeTask.passengerCount}}人</text></view>
+      <button wx:if="{{activeTask.dispatchStatus==='WAITING_DRIVER'}}" class="primary-btn" data-id="{{activeTask.dispatchId}}" bindtap="accept">确认接单</button>
+      <button wx:if="{{activeTask.dispatchStatus==='ACCEPTED'}}" class="primary-btn" data-id="{{activeTask.dispatchId}}" bindtap="depart">车辆出发</button>
+      <view wx:if="{{activeTask.dispatchStatus==='IN_SERVICE'}}" class="location-actions">
+        <button wx:if="{{!locationReporting}}" bindtap="startLocationReporting">开启位置上报</button><button wx:else bindtap="stopLocationReporting">停止位置上报</button>
+        <text>{{locationReporting?'每分钟上报一次':'当前未上报位置'}} {{locationUpdatedAt}}</text>
+      </view>
+      <map wx:if="{{currentLocation}}" class="driver-map" latitude="{{currentLocation.latitude}}" longitude="{{currentLocation.longitude}}" markers="{{locationMarkers}}" scale="15"></map>
+      <view wx:if="{{activeTask.dispatchStatus==='IN_SERVICE'}}" class="complete-form"><input type="digit" value="{{endMileageKm}}" bindinput="endMileageInput" placeholder="结束里程（公里）"/><input type="digit" value="{{fuelLiter}}" bindinput="fuelInput" placeholder="本次油耗（升，可不填）"/><button loading="{{completing}}" disabled="{{completing}}" data-id="{{activeTask.dispatchId}}" bindtap="complete">结束服务</button></view>
+    </view>
+    <view wx:else class="driver-empty card">暂无待处理司机任务</view>
+    <view class="task-history"><text>最近任务</text><view wx:for="{{tasks}}" wx:key="dispatchId" class="history-row card"><view><text>{{item.businessLabel}} · {{item.plateNo}}</text><text>{{item.departure}} → {{item.destination}}</text></view><text>{{item.statusLabel}}</text></view></view>
+  </block>
+</view>

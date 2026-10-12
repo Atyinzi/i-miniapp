@@ -1,0 +1,118 @@
+### 住宿第三阶段联调
+### 前置：执行第一、第二阶段请求，创建并支付住宿订单；后台已维护实体房间
+
+### 用户登录
+# @name userLogin
+POST http://localhost:8080/api/v1/app/auth/mock-login
+Content-Type: application/json
+
+{
+  "displayName": "住宿用户",
+  "accountType": "USER"
+}
+
+### 用户生成一次性入住码
+POST http://localhost:8080/api/v1/app/hotel/bookings/1/check-in-code
+Authorization: Bearer {{userLogin.response.body.$.data.accessToken}}
+
+### 管理员登录
+# @name adminLogin
+POST http://localhost:8080/api/v1/app/auth/mock-login
+Content-Type: application/json
+
+{
+  "displayName": "酒店前台",
+  "accountType": "ADMIN"
+}
+
+### 前台按订单状态、订单号、联系人姓名或手机号查询
+GET http://localhost:8080/api/v1/admin/hotels/operations/bookings?status=PAID&keyword=13800138000
+Authorization: Bearer {{adminLogin.response.body.$.data.accessToken}}
+
+### 使用入住码核销并分配实体房间
+POST http://localhost:8080/api/v1/admin/hotels/operations/check-in/by-code
+Authorization: Bearer {{adminLogin.response.body.$.data.accessToken}}
+Idempotency-Key: hotel-checkin-001
+Content-Type: application/json
+
+{
+  "checkInCode": "HC-HR20260804180000ABCDEF-123456789ABC",
+  "roomIds": [1],
+  "allowEarlyCheckIn": false,
+  "note": "前台扫码办理入住"
+}
+
+### 使用证件号码核验入住
+POST http://localhost:8080/api/v1/admin/hotels/operations/check-in/by-id-card
+Authorization: Bearer {{adminLogin.response.body.$.data.accessToken}}
+Idempotency-Key: hotel-id-checkin-001
+Content-Type: application/json
+
+{
+  "idNo": "110101199001011234",
+  "roomIds": [1],
+  "allowEarlyCheckIn": false,
+  "note": "证件核验入住"
+}
+
+### 同房型换房
+POST http://localhost:8080/api/v1/admin/hotels/operations/bookings/1/change-room
+Authorization: Bearer {{adminLogin.response.body.$.data.accessToken}}
+Idempotency-Key: hotel-change-room-001
+Content-Type: application/json
+
+{
+  "fromRoomId": 1,
+  "toRoomId": 2,
+  "reason": "客人申请安静房间"
+}
+
+### 续住
+POST http://localhost:8080/api/v1/admin/hotels/operations/bookings/1/extend
+Authorization: Bearer {{adminLogin.response.body.$.data.accessToken}}
+Idempotency-Key: hotel-extend-001
+Content-Type: application/json
+
+{
+  "newCheckOutDate": "2026-10-06",
+  "remark": "续住一晚，退房时补收"
+}
+
+### 退房试算
+POST http://localhost:8080/api/v1/admin/hotels/operations/bookings/1/checkout-quote
+Authorization: Bearer {{adminLogin.response.body.$.data.accessToken}}
+Content-Type: application/json
+
+[
+  {"chargeType": "MINIBAR", "description": "迷你吧饮品", "quantity": 2, "unitPriceCent": 1000},
+  {"chargeType": "LATE_CHECKOUT", "description": "延迟退房", "quantity": 1, "unitPriceCent": 5000}
+]
+
+### 确认退房结算，金额必须与试算结果一致
+POST http://localhost:8080/api/v1/admin/hotels/operations/bookings/1/checkout
+Authorization: Bearer {{adminLogin.response.body.$.data.accessToken}}
+Idempotency-Key: hotel-checkout-001
+Content-Type: application/json
+
+{
+  "charges": [
+    {"chargeType": "MINIBAR", "description": "迷你吧饮品", "quantity": 2, "unitPriceCent": 1000},
+    {"chargeType": "LATE_CHECKOUT", "description": "延迟退房", "quantity": 1, "unitPriceCent": 5000}
+  ],
+  "additionalPaidCent": 45800,
+  "refundCent": 0,
+  "paymentMethod": "WECHAT",
+  "remark": "正常退房"
+}
+
+### 房间清洁完成
+POST http://localhost:8080/api/v1/admin/hotels/operations/rooms/2/clean-complete
+Authorization: Bearer {{adminLogin.response.body.$.data.accessToken}}
+
+### 到店和逾期预警
+GET http://localhost:8080/api/v1/admin/hotels/operations/warnings
+Authorization: Bearer {{adminLogin.response.body.$.data.accessToken}}
+
+### 住宿经营报表
+GET http://localhost:8080/api/v1/admin/hotels/operations/report?startDate=2026-10-01&endDate=2026-10-31
+Authorization: Bearer {{adminLogin.response.body.$.data.accessToken}}

@@ -1,0 +1,33 @@
+<view class="page">
+  <view class="card">
+    <text class="title">{{loggedIn ? '完善账号' : '微信快捷登录'}}</text>
+    <text class="description" wx:if="{{!loggedIn}}">登录用于识别账号和同步订单，不会自动读取微信头像、昵称或手机号。</text>
+    <button wx:if="{{!loggedIn}}" class="login-button" bindtap="authorizeWechatLogin" loading="{{loginLoading}}">微信快捷登录</button>
+    <text wx:if="{{!loggedIn}}" class="privacy">暂不登录仍可浏览首页；提交订单或查看会员信息时再登录。</text>
+
+    <block wx:else>
+    <text class="description">登录成功。建议先绑定手机号，以便接收订单通知和客服联系。</text>
+    <view class="field phone-field">
+      <text>手机号</text>
+      <text>{{mobile || '尚未授权'}}</text>
+    </view>
+
+    <button class="phone-button" open-type="getPhoneNumber" bindgetphonenumber="authorizePhone" loading="{{phoneLoading}}">微信授权手机号</button>
+
+    <text class="section-label">个人资料（选填）</text>
+    <button class="avatar-button" open-type="chooseAvatar" bindchooseavatar="chooseAvatar">
+      <image wx:if="{{avatarUrl}}" src="{{avatarUrl}}" mode="aspectFill"/>
+      <text wx:else>{{avatarText}}</text>
+      <view>选择微信头像</view>
+    </button>
+
+    <view class="field">
+      <text>微信昵称</text>
+      <input type="nickname" value="{{nickname}}" maxlength="32" bindinput="nicknameInput" placeholder="填写微信昵称"/>
+    </view>
+
+    <button class="save-button" bindtap="saveProfile">保存资料</button>
+    <text class="privacy">头像和昵称可以稍后完善，不影响账号登录。</text>
+    </block>
+  </view>
+</view>

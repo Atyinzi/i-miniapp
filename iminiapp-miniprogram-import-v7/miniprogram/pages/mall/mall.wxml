@@ -1,0 +1,172 @@
+<view class="mall-page">
+  <view class="mall-status-bar" style="height:{{statusBarHeight}}px"></view>
+
+  <view wx:if="{{viewMode==='list'}}" class="mall-nav" style="top:{{statusBarHeight}}px;height:{{navBarHeight}}px;padding-right:{{menuSafeRight}}px">
+    <button class="mall-back" bindtap="backPage" aria-label="返回首页">‹</button>
+    <text class="mall-nav-title">特色商城</text>
+    <view class="mall-search"><text>⌕</text><input value="{{keyword}}" placeholder="搜索商品、关键词" confirm-type="search" bindinput="keywordInput"/><button wx:if="{{keyword}}" bindtap="clearKeyword">×</button></view>
+    <button class="nav-cart {{cartBump?'cart-bump':''}}" bindtap="openCart" aria-label="打开购物车"><image class="mall-cart-icon" src="/assets/images/dining/cart-icon.png" mode="aspectFit"/><text wx:if="{{cartCount}}" class="nav-cart-badge">{{cartCount}}</text></button>
+  </view>
+
+  <view wx:if="{{viewMode==='detail'}}" class="mall-nav detail-nav" style="top:{{statusBarHeight}}px;height:{{navBarHeight}}px;padding-right:{{menuSafeRight}}px">
+    <button class="mall-back" bindtap="backPage" aria-label="返回商城">‹</button>
+    <text class="detail-nav-title">商品详情</text>
+    <view class="detail-nav-actions"><button bindtap="openSharePanel" aria-label="分享商品">↗</button><button class="nav-cart {{cartBump?'cart-bump':''}}" bindtap="openCart" aria-label="打开购物车"><image class="mall-cart-icon" src="/assets/images/dining/cart-icon.png" mode="aspectFit"/><text wx:if="{{cartCount}}" class="nav-cart-badge">{{cartCount}}</text></button></view>
+  </view>
+  <view wx:if="{{sharePanelVisible}}" class="share-channel-mask" bindtap="closeSharePanel" catchtouchmove="preventShareTap"><view class="share-channel-panel" catchtap="preventShareTap"><view class="share-channel-head"><view><text>分享到</text><text>使用微信原生分享</text></view><button bindtap="closeSharePanel">×</button></view><view class="share-channel-options"><button open-type="share" bindtap="closeSharePanel"><view class="share-channel-icon wechat-channel">微</view><view><text>微信好友</text><text>使用微信原生分享</text></view><text>›</text></button></view></view></view>
+
+  <view wx:if="{{viewMode==='cart'}}" class="mall-nav cart-nav" style="top:{{statusBarHeight}}px;height:{{navBarHeight}}px;padding-right:{{menuSafeRight}}px">
+    <button class="mall-back" bindtap="backPage" aria-label="返回商城">‹</button>
+    <text class="detail-nav-title">购物车</text>
+    <text class="cart-nav-count">{{cartCount}}件</text>
+  </view>
+
+  <view wx:if="{{viewMode==='list'}}" class="mall-list-view">
+    <view class="mall-hero">
+      <view><text class="mall-kicker">IMINIAPP SELECT</text><text class="mall-title">i某小程序好物</text><text class="mall-subtitle">把工业记忆与旅途味道带回家</text></view>
+      <view class="hero-emblem"><text>北</text><text>重</text></view>
+    </view>
+
+    <scroll-view class="mall-categories" scroll-x show-scrollbar="{{false}}">
+      <button wx:for="{{categories}}" wx:key="*this" class="mall-category {{activeCategory===item?'mall-category-active':''}}" data-category="{{item}}" bindtap="changeCategory">{{item}}</button>
+    </scroll-view>
+
+    <view class="mall-toolbar">
+      <view><text>精选商品</text><text>共 {{visibleProducts.length}} 件</text></view>
+      <picker mode="selector" range="{{sortOptions}}" value="{{sortIndex}}" bindchange="sortChange"><view class="sort-picker">{{sortOptions[sortIndex]}} <text>⌄</text></view></picker>
+    </view>
+
+    <view wx:if="{{catalogLoading && !visibleProducts.length}}" class="product-grid mall-skeleton-grid">
+      <view wx:for="{{skeletonItems}}" wx:key="*this" class="product-card mall-skeleton-card">
+        <view class="skeleton-block skeleton-image"></view>
+        <view class="product-info"><view class="skeleton-block skeleton-title"></view><view class="skeleton-block skeleton-line"></view><view class="skeleton-block skeleton-price"></view></view>
+      </view>
+    </view>
+
+    <view wx:else class="product-grid">
+      <view wx:for="{{visibleProducts}}" wx:key="id" class="product-card" data-id="{{item.id}}" bindtap="openProduct" hover-class="product-card-pressed">
+        <view class="product-art product-tone-{{item.tone}}">
+          <image class="product-image" src="{{item.image}}" mode="aspectFill" lazy-load="true"/>
+          <text class="product-category-tag">{{item.category}}</text>
+        </view>
+        <view class="product-info">
+          <text class="product-name">{{item.name}}</text>
+          <text class="product-desc">{{item.desc}}</text>
+          <view class="product-sales"><text>已售 {{item.sales}} 件</text><text>库存 {{item.inventory}}</text></view>
+          <view class="product-bottom"><text class="product-price"><text>¥</text>{{item.price}}</text><button id="mall-add-{{item.id}}" class="quick-add {{addPulseId===item.id?'quick-add-pop':''}}" data-id="{{item.id}}" catchtap="quickAdd" aria-label="加入购物车"><text>＋</text></button></view>
+        </view>
+      </view>
+    </view>
+
+    <view wx:if="{{catalogError && !visibleProducts.length}}" class="mall-empty mall-load-error"><text>!</text><text>商品加载失败</text><text>{{catalogError}}</text><button bindtap="retryCatalog">重新加载</button></view>
+    <view wx:elif="{{!catalogLoading && !visibleProducts.length}}" class="mall-empty"><text>物</text><text>没有找到相关商品</text><text>换个关键词或分类试试</text></view>
+  </view>
+
+  <view wx:if="{{viewMode==='detail'}}" class="product-detail-view">
+    <swiper class="detail-swiper" current="{{detailSlide}}" bindchange="detailSlideChange" circular>
+      <swiper-item wx:for="{{currentProduct.detailSlides}}" wx:key="label" wx:for-item="slide">
+        <view wx:if="{{index===0}}" class="detail-art detail-photo" bindtap="previewProductImage">
+          <image src="{{currentProduct.image}}" mode="aspectFill"/>
+          <view class="detail-photo-tip"><text>⌕</text><text>点击查看大图</text></view>
+        </view>
+        <view wx:else class="detail-art product-tone-{{currentProduct.tone}}"><text class="detail-art-symbol">{{slide.art}}</text><text>{{slide.label}}</text><text class="detail-edition">{{currentProduct.edition}}</text></view>
+      </swiper-item>
+    </swiper>
+    <view class="detail-dots"><view wx:for="{{currentProduct.detailSlides}}" wx:key="label" class="detail-dot {{detailSlide===index?'detail-dot-active':''}}"></view></view>
+
+    <view class="product-detail-card">
+      <view class="detail-price-row"><text class="detail-price"><text>¥</text>{{selectedSkuPrice}}</text><text>已售 {{currentProduct.sales}} 件</text></view>
+      <text class="detail-product-name">{{currentProduct.name}}</text>
+      <text class="detail-product-desc">{{currentProduct.desc}}</text>
+      <view class="detail-status"><text>官方文创</text><text>当前规格库存 {{selectedSkuInventory}} 件</text><text>支持配送</text></view>
+    </view>
+
+    <view class="detail-section">
+      <view class="detail-section-head"><text>选择规格</text><text>已选：{{currentProduct.specs[selectedSpecIndex]}}</text></view>
+      <view class="spec-list"><button wx:for="{{currentProduct.specs}}" wx:key="*this" class="spec-button {{selectedSpecIndex===index?'spec-active':''}}" data-index="{{index}}" bindtap="selectSpec">{{item}}</button></view>
+    </view>
+
+    <view class="detail-section quantity-section">
+      <view><text>购买数量</text><text>当前最多 {{selectedSkuInventory}} 件</text></view>
+      <view class="detail-quantity"><button data-delta="-1" bindtap="adjustDetailQuantity">−</button><text>{{detailQuantity}}</text><button data-delta="1" bindtap="adjustDetailQuantity">＋</button></view>
+    </view>
+
+    <view class="detail-section service-section">
+      <text class="service-title">商品与售后说明</text>
+      <view><text>正</text><text>i某小程序官方文创商品</text></view>
+      <view><text>退</text><text>未拆封商品支持按平台规则申请退换</text></view>
+      <view><text>询</text><text>规格及库存以提交订单时页面显示为准</text></view>
+    </view>
+    <view class="detail-bottom-spacer"></view>
+    <view class="detail-buy-bar">
+      <button class="bottom-cart-entry {{cartBump?'cart-bump':''}}" bindtap="openCart"><image class="bottom-cart-icon" src="/assets/images/dining/cart-icon.png" mode="aspectFit"/><text>购物车</text><text wx:if="{{cartCount}}" class="bottom-cart-badge">{{cartCount}}</text></button>
+      <button class="add-cart-button" bindtap="addDetailCart">加入购物车</button>
+      <button class="buy-now-button" bindtap="openDetailCheckout">立即购买</button>
+    </view>
+  </view>
+
+  <view wx:if="{{viewMode==='cart'}}" class="cart-view">
+    <view wx:if="{{cartItems.length}}" class="cart-list">
+      <view wx:for="{{cartItems}}" wx:key="key" class="cart-item">
+        <view class="cart-art product-tone-{{item.tone}}"><image wx:if="{{item.image}}" src="{{item.image}}" mode="aspectFill"/><text wx:else>{{item.art}}</text></view>
+        <view class="cart-copy"><text>{{item.name}}</text><text>{{item.spec}}</text><text>¥{{item.price}}</text></view>
+        <view class="cart-item-actions"><button class="cart-delete" data-key="{{item.key}}" bindtap="removeCartItem">删除</button><view class="cart-quantity"><button data-key="{{item.key}}" data-delta="-1" bindtap="adjustCart">−</button><text>{{item.quantity}}</text><button data-key="{{item.key}}" data-delta="1" bindtap="adjustCart">＋</button></view></view>
+      </view>
+      <view class="cart-service-note"><text>购</text><view><text>放心购买</text><text>商品数量、规格与收货方式可在结算前再次确认</text></view></view>
+      <view class="cart-bottom-spacer"></view>
+      <view class="cart-checkout-bar"><view><text>共 {{cartCount}} 件</text><text>合计 <text>¥{{cartAmountLabel}}</text></text></view><button bindtap="openCartCheckout">去结算</button></view>
+    </view>
+    <view wx:else class="cart-empty"><text>车</text><text>购物车还是空的</text><text>去挑选喜欢的i某小程序好物吧</text><button bindtap="backPage">去逛逛</button></view>
+  </view>
+
+  <view wx:if="{{flyVisible}}" class="mall-fly-item product-tone-{{flyTone}}" style="left:{{flyLeft}}px;top:{{flyTop}}px" animation="{{flyAnimation}}">{{flyArt}}</view>
+
+  <view wx:if="{{productPreviewVisible}}" class="product-preview-mask" bindtap="closeProductPreview" catchtouchmove="preventOverlayTap">
+    <view class="product-preview-panel" catchtap="preventOverlayTap">
+      <image src="{{productPreviewImage}}" mode="aspectFit"/>
+      <view class="product-preview-caption"><text>{{productPreviewTitle}}</text><text>点击空白处关闭</text></view>
+      <button bindtap="closeProductPreview" aria-label="关闭图片预览">×</button>
+    </view>
+  </view>
+
+  <view wx:if="{{checkoutVisible}}" class="checkout-mask" bindtap="closeCheckout" catchtouchmove="preventOverlayTap"></view>
+  <view wx:if="{{checkoutVisible}}" class="checkout-panel" catchtap="preventOverlayTap">
+    <view class="checkout-handle"></view>
+    <view class="checkout-head"><view class="checkout-title-icon">订</view><view class="checkout-title-copy"><text>确认订单</text><text>请核对商品与收货信息</text></view><button bindtap="closeCheckout">×</button></view>
+    <scroll-view class="checkout-body" scroll-y>
+      <view class="checkout-overview"><view><text>订单金额</text><text>¥{{checkoutAmountLabel}}</text></view><view><text>{{checkoutQuantity}}</text><text>商品件数</text></view><view><text>¥0</text><text>配送费用</text></view></view>
+
+      <view class="checkout-section">
+        <view class="checkout-section-title"><view><text class="section-number">01</text><text>商品清单</text></view><text>{{checkoutItems.length}} 种 · {{checkoutQuantity}} 件</text></view>
+        <view class="checkout-items">
+          <view wx:for="{{checkoutItems}}" wx:key="key" class="checkout-item"><view class="checkout-mini-art product-tone-{{item.tone}}"><image wx:if="{{item.image}}" src="{{item.image}}" mode="aspectFill"/><text wx:else>{{item.art}}</text></view><view><text>{{item.name}}</text><text>{{item.spec}} · 数量 {{item.quantity}}</text></view><text>¥{{item.lineTotalLabel}}</text></view>
+        </view>
+      </view>
+
+      <view class="checkout-section">
+        <view class="checkout-section-title"><view><text class="section-number green-number">02</text><text>收货地址</text></view><text>地址保存到个人账户</text></view>
+        <picker class="shipping-picker" mode="selector" range="{{shippingAddresses}}" value="{{shippingAddressIndex}}" bindchange="shippingAddressChange"><view><view><text>址</text><view><text>当前选择</text><text>{{shippingAddresses[shippingAddressIndex]}}</text></view></view><text>›</text></view></picker>
+        <block wx:if="{{shippingAddressIndex===addressRecords.length}}">
+          <input class="shipping-input" value="{{newReceiverName}}" bindinput="newReceiverNameInput" placeholder="收货人姓名"/>
+          <input class="shipping-input" type="number" maxlength="11" value="{{newReceiverMobile}}" bindinput="newReceiverMobileInput" placeholder="11位手机号"/>
+          <picker class="shipping-picker" mode="region" value="{{newAddressRegion}}" bindchange="newAddressRegionChange"><view><view><text>区</text><view><text>省 / 市 / 区</text><text>{{newAddressRegion[0]}} {{newAddressRegion[1]}} {{newAddressRegion[2]}}</text></view></view><text>›</text></view></picker>
+          <input class="shipping-input" value="{{newDetailAddress}}" bindinput="newDetailAddressInput" placeholder="街道、门牌号等详细地址"/>
+        </block>
+      </view>
+
+      <view class="checkout-section">
+        <view class="checkout-section-title"><view><text class="section-number gold-number">03</text><text>支付方式</text></view><text>安全支付</text></view>
+        <view class="payment-option"><view class="wechat-pay-icon">微</view><view><text>微信支付</text><text>推荐使用 · 支付结果实时同步</text></view><text class="payment-checked">✓</text></view>
+      </view>
+
+      <view class="fee-detail checkout-section"><view><text>商品金额</text><text>¥{{checkoutOriginalAmountLabel}}</text></view><view class="member-benefit-line"><text>{{memberBenefit.level}} · {{memberBenefit.discountLabel}}</text><text>-¥{{checkoutDiscountAmountLabel}}</text></view><view><text>配送费用</text><text>¥0.00</text></view><view class="fee-total"><text>会员应付</text><text>¥{{checkoutAmountLabel}}</text></view><text class="member-points-hint">付款后积分待结算，订单完成且无退款后发放</text></view>
+      <view class="checkout-safe-note"><text>安</text><text>提交后会生成真实待支付订单并锁定库存；请在“我的订单”中完成微信支付。</text></view>
+      <view class="checkout-body-spacer"></view>
+    </scroll-view>
+    <view class="checkout-submit-bar"><view><text>应付</text><text>¥{{checkoutAmountLabel}}</text></view><button class="submit-order-button" loading="{{submitting}}" disabled="{{submitting}}" bindtap="submitCheckout"><text>{{submitting?'提交中':'提交订单'}}</text><text>生成待支付订单 ›</text></button></view>
+  </view>
+
+  <view wx:if="{{checkoutSuccess}}" class="success-mask" catchtouchmove="preventOverlayTap">
+    <view class="success-panel"><view class="success-check">✓</view><text>下单成功</text><text>订单号 {{successOrderNo}}</text><text>订单和收货信息已写入后端，可前往“我的订单”继续支付或取消。</text><button bindtap="closeSuccess">完成</button></view>
+  </view>
+</view>
