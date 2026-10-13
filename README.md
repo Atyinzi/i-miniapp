@@ -1,68 +1,37 @@
-# i某小程序
+# i某小程序项目
 
-匿名化的微信小程序全栈项目，包含 Java 后端、Vue 运营管理端和原生微信小程序。仓库名称和代码包名使用 `iminiapp`。本仓库用于代码展示与独立开发；生产配置、原始交付文档和真实微信 AppID 不在公开版本中。迁移说明见 [PRIVACY.md](PRIVACY.md)。
+这是匿名化展示版本。初始化、微信 AppID 和历史迁移注意事项见 [PRIVACY.md](PRIVACY.md)。
 
-## 项目结构
+本仓库是“i某小程序”微信小程序项目的统一交付仓库，包含后端、运营管理端、微信小程序、数据库迁移和项目交付资料。
 
-| 路径 | 内容 |
-| --- | --- |
-| `iminiapp-backend/` | Spring Boot 4、Java 17、MySQL、Redis、Flyway REST API |
-| `iminiapp-admin/` | Vue 3、Vite 管理端 |
-| `iminiapp-miniprogram-import-v7/` | 微信原生小程序及 Node.js 测试 |
-| `compose.test.yml` | 仅用于本地验证的 MySQL 和 Redis |
+## 目录
 
-## 本地运行
+- `iminiapp-backend/`：Spring Boot 4、Java 17、MySQL、Redis、Flyway 后端。
+- `iminiapp-admin/`：Vue 3、Vite 运营管理平台。
+- `iminiapp-miniprogram-import-v7/`：微信原生小程序。
+- 根目录文档：需求、架构、开发规范、联调验收与生产运维资料。
 
-需要 JDK 17、Node.js 20、pnpm 10。完整集成验证还需要 Docker。以下命令从仓库根目录执行。
+## 本地启动
 
-1. 启动测试用依赖：
+1. 根据 `iminiapp-backend/application-local.properties.example` 创建仅供本机使用的 `application-local.properties`，真实密码和密钥不得提交。
+2. 启动 MySQL 8 和 Redis 7。
+3. 在 IDEA 运行后端 `IminiappBackendApplication`。
+4. 在 `iminiapp-admin` 执行 `pnpm install` 和 `pnpm run dev`。
+5. 使用微信开发者工具导入 `iminiapp-miniprogram-import-v7`。
 
-   ```bash
-   docker compose -f compose.test.yml up -d --wait
-   ```
+## 验证命令
 
-2. 配置后端。本地启动请根据 `iminiapp-backend/application-local.properties.example` 创建被 Git 忽略的 `application-local.properties`，并填写自己的数据库、Redis 和应用密钥。`test` profile 只供测试使用，不应用于部署。
-3. 在 `iminiapp-backend` 中运行 `./mvnw spring-boot:run`，Windows 使用 `mvnw.cmd spring-boot:run`。按本地配置设置 Spring profile 和环境变量。
-4. 在 `iminiapp-admin` 中运行 `pnpm install --frozen-lockfile` 和 `pnpm dev`。
-5. 用微信开发者工具导入 `iminiapp-miniprogram-import-v7`。仓库中的 `touristappid` 是匿名化占位值；真实调试请使用自己的 AppID，并通过本地私有配置管理。
-
-## 验证
-
-后端单元测试（不要求 MySQL/Redis）：
-
-```bash
-cd iminiapp-backend
-./mvnw test
+```text
+后端：mvn clean test
+管理端：pnpm run build
+小程序：逐个运行 iminiapp-miniprogram-import-v7/tests/*.test.js
 ```
 
-后端完整集成测试（先启动 `compose.test.yml` 中的服务）：
+## 安全要求
 
-```bash
-cd iminiapp-backend
-TEST_DB_URL='jdbc:mysql://127.0.0.1:3306/iminiapp_test?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai' TEST_DB_USERNAME=root TEST_DB_PASSWORD=root ./mvnw -Pintegration-test verify
-```
+- 生产数据库密码、Redis 密码、微信 AppSecret、支付密钥、个人数据加密密钥不得进入 Git。
+- 本地配置、IDE 私有配置、微信开发者私有配置和接口令牌均由 `.gitignore` 排除。
+- 已执行的 Flyway 迁移禁止改写，数据库变更必须新增更高版本迁移。
+- 正式环境必须使用 `prod` Profile、HTTPS、独立数据库账号、Redis 密码和最小权限管理员账号。
 
-Windows PowerShell 可先设置 `$env:TEST_DB_URL`、`$env:TEST_DB_USERNAME`、`$env:TEST_DB_PASSWORD`，再执行 `.\mvnw.cmd -Pintegration-test verify`。以上 `root` 仅是本地测试容器的示例密码，请勿用于生产。
-
-管理端构建：
-
-```bash
-cd iminiapp-admin
-pnpm install --frozen-lockfile
-pnpm run build
-```
-
-小程序测试：
-
-```bash
-cd iminiapp-miniprogram-import-v7
-for file in tests/*.test.js; do node "$file"; done
-```
-
-GitHub Actions 的 [Verify project](.github/workflows/verify.yml) 在推送和 PR 时分别执行后端单元及集成测试、管理端构建、小程序测试。失败时上传后端测试报告。
-
-## 安全与部署
-
-- 不要提交数据库密码、Redis 密码、微信 AppSecret、支付密钥或真实用户数据。
-- 匿名化后的迁移文件校验和已变化。必须在**新数据库**初始化，不能直接覆盖旧项目数据库。
-- 上线前需使用独立的生产账号、HTTPS、真实 AppID、外部服务配置和经审核的图片素材；参见 [PRIVACY.md](PRIVACY.md) 与 [正式交付与联调清单.md](正式交付与联调清单.md)。
+详细上线门槛见 `正式交付与联调清单.md`，生产部署与回滚见 `生产部署回滚备份与运维手册.md`。
